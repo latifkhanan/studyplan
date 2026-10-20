@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "537951855992",
+    "firebase_url": "https://studyplan-4fa5a-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "studyplan-4fa5a",
+    "storage_bucket": "studyplan-4fa5a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:537951855992:android:08f09657fd2497430bd48d",
+        "android_client_info": {
+          "package_name": "com.example.studyplan"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "537951855992-ptktjg4lf4qr1l0dvq7lghqmt369hrps.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyTGKScHZN_VjHpQ3wIT_MpikbAEBIcKY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "537951855992-ptktjg4lf4qr1l0dvq7lghqmt369hrps.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
