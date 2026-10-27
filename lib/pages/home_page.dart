@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/jadwal.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/jadwal_card.dart';
 import '../widgets/delete_confirmation_dialog.dart';
 import 'form_jadwal_page.dart';
@@ -67,6 +68,7 @@ class _HomePageState extends State<HomePage> {
 
     if (confirm == true && item.id != null) {
       await DatabaseService.instance.deleteJadwal(item.id!, docId: item.docId);
+      await NotificationService.instance.cancelJadwalAlarm(item.id!);
       _loadJadwal();
     }
   }

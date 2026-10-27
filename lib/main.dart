@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'pages/home_page.dart';
 import 'pages/jadwal_page.dart';
+import 'pages/catatan_page.dart';
 import 'pages/login_page.dart';
 import 'pages/pengaturan_page.dart';
 import 'services/auth_service.dart';
+import 'services/database_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +22,13 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase initializeApp note: $e');
   }
+
+  try {
+    await NotificationService.instance.initialize();
+  } catch (e) {
+    debugPrint('NotificationService init error: $e');
+  }
+
   runApp(const StudyPlanApp());
 }
 
@@ -200,7 +211,9 @@ class _SplashScreenState extends State<SplashScreen> {
               'Jadwal Kuliah & Perencanaan Belajar',
               style: TextStyle(
                 fontSize: 14,
-                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
             ),
             const SizedBox(height: 48),
@@ -239,10 +252,26 @@ class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    _syncAlarms();
+  }
+
+  Future<void> _syncAlarms() async {
+    try {
+      final schedules = await DatabaseService.instance.getAllJadwal();
+      await NotificationService.instance.syncAllAlarms(schedules);
+    } catch (e, stackTrace) {
+      debugPrint('Failed to sync scheduled alarms: $e\n$stackTrace');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       const HomePage(),
       const JadwalPage(),
+      CatatanPage(isActive: _currentIndex == 2),
       PengaturanPage(
         currentTheme: widget.currentTheme,
         onThemeChanged: widget.onThemeChanged,
@@ -253,10 +282,7 @@ class _MainPageState extends State<MainPage> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: pages,
-        ),
+        child: IndexedStack(index: _currentIndex, children: pages),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
@@ -275,13 +301,14 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildNavItem(0, Icons.home_rounded, 'Beranda'),
           _buildNavItem(1, Icons.calendar_today_rounded, 'Jadwal'),
-          _buildNavItem(2, Icons.settings_rounded, 'Pengaturan'),
+          _buildNavItem(2, Icons.note_alt_rounded, 'Catatan'),
+          _buildNavItem(3, Icons.settings_rounded, 'Pengaturan'),
         ],
       ),
     );
@@ -303,7 +330,7 @@ class _MainPageState extends State<MainPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
               color: isSelected
                   ? (isDark ? const Color(0xFF1E3A8A) : const Color(0xFFEFF4FF))
@@ -312,17 +339,21 @@ class _MainPageState extends State<MainPage> {
             ),
             child: Icon(
               icon,
-              color: isSelected ? const Color(0xFF3563E9) : const Color(0xFF94A3B8),
-              size: 24,
+              color: isSelected
+                  ? const Color(0xFF3563E9)
+                  : const Color(0xFF94A3B8),
+              size: 22,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? const Color(0xFF3563E9) : const Color(0xFF94A3B8),
+              color: isSelected
+                  ? const Color(0xFF3563E9)
+                  : const Color(0xFF94A3B8),
             ),
           ),
         ],

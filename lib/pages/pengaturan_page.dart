@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+
 import '../services/auth_service.dart';
+import '../services/database_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/logout_confirmation_dialog.dart';
 
 enum AppThemeMode { terang, gelap, sistem }
@@ -22,6 +26,8 @@ class PengaturanPage extends StatefulWidget {
 
 class _PengaturanPageState extends State<PengaturanPage> {
   late AppThemeMode _selectedTheme;
+  String _selectedRingtone = 'default_alarm';
+  String? _customAudioName;
 
   // Profil Pengguna Data
   String _userName = 'Pengguna StudyPlan';
@@ -34,6 +40,18 @@ class _PengaturanPageState extends State<PengaturanPage> {
     super.initState();
     _selectedTheme = widget.currentTheme;
     _loadUserProfile();
+    _loadRingtoneSetting();
+  }
+
+  Future<void> _loadRingtoneSetting() async {
+    final tone = await NotificationService.instance.getSelectedRingtone();
+    final customName = await NotificationService.instance.getCustomAudioName();
+    if (mounted) {
+      setState(() {
+        _selectedRingtone = tone;
+        _customAudioName = customName;
+      });
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -41,7 +59,8 @@ class _PengaturanPageState extends State<PengaturanPage> {
     if (currentUser != null) {
       if (mounted) {
         setState(() {
-          if (currentUser.displayName != null && currentUser.displayName!.isNotEmpty) {
+          if (currentUser.displayName != null &&
+              currentUser.displayName!.isNotEmpty) {
             _userName = currentUser.displayName!;
           }
           if (currentUser.email != null && currentUser.email!.isNotEmpty) {
@@ -62,11 +81,355 @@ class _PengaturanPageState extends State<PengaturanPage> {
     }
   }
 
+  String _getRingtoneLabel(String key) {
+    switch (key) {
+      case 'custom_file':
+        return '🎶 File Kustom: ${_customAudioName ?? "File Audio"}';
+      case 'default_notification':
+        return '🎵 Nada Notifikasi Standar HP';
+      case 'digital_alarm':
+        return '⏰ Alarm Digital Melodi';
+      case 'gentle_chime':
+        return '🍃 Chime Lembut';
+      case 'default_alarm':
+      default:
+        return '🔔 Nada Alarm Standar HP';
+    }
+  }
+
+  void _showRingtonePickerModal() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
+
+    String tempSelectedKey = _selectedRingtone;
+    String? tempCustomName = _customAudioName;
+
+    final options = [
+      {
+        'key': 'default_alarm',
+        'title': '🔔 Nada Alarm Standar HP',
+        'sub': 'Suara alarm utama dari sistem perangkat',
+      },
+      {
+        'key': 'default_notification',
+        'title': '🎵 Nada Notifikasi Standar HP',
+        'sub': 'Suara notifikasi umum perangkat',
+      },
+      {
+        'key': 'digital_alarm',
+        'title': '⏰ Alarm Digital Melodi',
+        'sub': 'Nada alarm ritme digital melodi',
+      },
+      {
+        'key': 'gentle_chime',
+        'title': '🍃 Chime Lembut',
+        'sub': 'Nada dentang lembut yang menenangkan',
+      },
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final activeOptions = List<Map<String, String>>.from(options);
+            if (tempCustomName != null) {
+              activeOptions.add({
+                'key': 'custom_file',
+                'title': '🎶 File Kustom: $tempCustomName',
+                'sub': 'File musik MP3/audio pilihan Anda dari memori HP',
+              });
+            }
+
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF475569)
+                            : const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Header Modal
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Pilih Nada Dering Alarm',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: titleColor,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () {
+                          NotificationService.instance.stopAudioPreview();
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Divider(color: borderColor, height: 1),
+                  const SizedBox(height: 16),
+
+                  // Button File Picker Kustom
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          color: Color(0xFF3563E9),
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () async {
+                        final result = await FilePicker.platform.pickFiles(
+                          type: FileType.audio,
+                          allowMultiple: false,
+                        );
+                        if (result != null && result.files.isNotEmpty) {
+                          final file = result.files.first;
+                          if (file.path != null) {
+                            try {
+                              await NotificationService.instance
+                                  .setCustomAudioFile(file.path!, file.name);
+                              final schedules = await DatabaseService.instance
+                                  .getAllJadwal();
+                              await NotificationService.instance.syncAllAlarms(
+                                schedules,
+                              );
+                              setModalState(() {
+                                tempSelectedKey = 'custom_file';
+                                tempCustomName = file.name;
+                              });
+                              await NotificationService.instance
+                                  .showInstantTestNotification();
+                            } catch (error) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'File audio tidak dapat digunakan untuk alarm: $error',
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.folder_open_rounded,
+                        color: Color(0xFF3563E9),
+                      ),
+                      label: const Text(
+                        'Pilih File Musik/MP3 dari HP...',
+                        style: TextStyle(
+                          color: Color(0xFF3563E9),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // List Options
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: activeOptions.map((opt) {
+                          final isSelected = tempSelectedKey == opt['key'];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? (isDark
+                                        ? const Color(0xFF1E3A8A)
+                                        : const Color(0xFFEFF4FF))
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isSelected
+                                    ? const Color(0xFF3563E9)
+                                    : Colors.transparent,
+                              ),
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              title: Text(
+                                opt['title']!,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? const Color(0xFF3563E9)
+                                      : titleColor,
+                                ),
+                              ),
+                              subtitle: Text(
+                                opt['sub']!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                              trailing: Icon(
+                                isSelected
+                                    ? Icons.radio_button_checked_rounded
+                                    : Icons.radio_button_off_rounded,
+                                color: isSelected
+                                    ? const Color(0xFF3563E9)
+                                    : const Color(0xFF94A3B8),
+                              ),
+                              onTap: () async {
+                                setModalState(() {
+                                  tempSelectedKey = opt['key']!;
+                                });
+                                await NotificationService.instance
+                                    .setSelectedRingtone(opt['key']!);
+                                final schedules = await DatabaseService.instance
+                                    .getAllJadwal();
+                                await NotificationService.instance
+                                    .syncAllAlarms(schedules);
+                                await NotificationService.instance
+                                    .showInstantTestNotification();
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Action Buttons: Batal & Simpan
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: borderColor),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () {
+                            NotificationService.instance.stopAudioPreview();
+                            Navigator.pop(context);
+                          },
+                          child: Text(
+                            'Batal',
+                            style: TextStyle(
+                              color: titleColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF3563E9),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            elevation: 0,
+                          ),
+                          onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final navigator = Navigator.of(context);
+                            await NotificationService.instance
+                                .setSelectedRingtone(tempSelectedKey);
+                            final schedules = await DatabaseService.instance
+                                .getAllJadwal();
+                            await NotificationService.instance.syncAllAlarms(
+                              schedules,
+                            );
+                            await NotificationService.instance
+                                .stopAudioPreview();
+
+                            if (!mounted) return;
+                            setState(() {
+                              _selectedRingtone = tempSelectedKey;
+                              _customAudioName = tempCustomName;
+                            });
+
+                            navigator.pop();
+
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '✅ Nada dering disetel ke: ${_getRingtoneLabel(tempSelectedKey)}',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: const Color(0xFF3563E9),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Simpan & Gunakan',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final sectionHeaderColor = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B);
+    final sectionHeaderColor = isDark
+        ? const Color(0xFFCBD5E1)
+        : const Color(0xFF64748B);
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -98,11 +461,26 @@ class _PengaturanPageState extends State<PengaturanPage> {
           _buildProfileCard(),
           const SizedBox(height: 24),
 
-          // 2. Branding Card
+          // 2. Alarm & Notifikasi
+          Text(
+            'Pengingat & Alarm',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: sectionHeaderColor,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildRingtoneCard(),
+          const SizedBox(height: 12),
+          _buildAlarmTestCard(),
+          const SizedBox(height: 24),
+
+          // 3. Branding Card
           _buildBrandingCard(),
           const SizedBox(height: 24),
 
-          // 3. Tampilan Section
+          // 4. Tampilan Section
           Text(
             'Tampilan',
             style: TextStyle(
@@ -115,7 +493,7 @@ class _PengaturanPageState extends State<PengaturanPage> {
           _buildThemeCard(),
           const SizedBox(height: 24),
 
-          // 4. Tentang Aplikasi Section
+          // 5. Tentang Aplikasi Section
           Text(
             'Tentang aplikasi',
             style: TextStyle(
@@ -128,7 +506,7 @@ class _PengaturanPageState extends State<PengaturanPage> {
           _buildAboutCard(),
           const SizedBox(height: 24),
 
-          // 5. Logout Action
+          // 6. Logout Action
           if (widget.onLogout != null) _buildLogoutCard(),
         ],
       ),
@@ -150,7 +528,9 @@ class _PengaturanPageState extends State<PengaturanPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withValues(alpha: 0.2) : const Color.fromRGBO(0, 0, 0, 0.02),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : const Color.fromRGBO(0, 0, 0, 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -160,7 +540,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
         children: [
           Row(
             children: [
-              // Avatar
               Stack(
                 children: [
                   CircleAvatar(
@@ -198,7 +577,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
                 ],
               ),
               const SizedBox(width: 16),
-              // Detail Profile Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +594,9 @@ class _PengaturanPageState extends State<PengaturanPage> {
                       'NIM: $_userNim • $_userProdi',
                       style: TextStyle(
                         fontSize: 13,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -253,7 +633,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
             height: 1,
           ),
           const SizedBox(height: 12),
-          // Edit Profil Button
           InkWell(
             onTap: _showEditProfileModal,
             borderRadius: BorderRadius.circular(12),
@@ -262,11 +641,7 @@ class _PengaturanPageState extends State<PengaturanPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
-                  Icon(
-                    Icons.edit_outlined,
-                    size: 18,
-                    color: Color(0xFF3563E9),
-                  ),
+                  Icon(Icons.edit_outlined, size: 18, color: Color(0xFF3563E9)),
                   SizedBox(width: 8),
                   Text(
                     'Edit Profil',
@@ -279,6 +654,216 @@ class _PengaturanPageState extends State<PengaturanPage> {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRingtoneCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: _showRingtonePickerModal,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3563E9).withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.music_note_rounded,
+                    color: Color(0xFF3563E9),
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Nada Dering / Suara Alarm',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _getRingtoneLabel(_selectedRingtone),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF3563E9),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlarmTestCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.notifications_active_outlined,
+                color: Color(0xFF3563E9),
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Pengujian Alarm',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Uji coba suara dan getaran alarm jadwal kuliah pada perangkat Anda.',
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3563E9),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                  ),
+                  onPressed: () async {
+                    await NotificationService.instance
+                        .showInstantTestNotification();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text(
+                            '🔔 Notifikasi & Alarm tes dikirim!',
+                          ),
+                          action: SnackBarAction(
+                            label: 'Matikan Suara',
+                            textColor: Colors.amber,
+                            onPressed: () {
+                              NotificationService.instance.stopAudioPreview();
+                            },
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: const Color(0xFF3563E9),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.volume_up_rounded, size: 18),
+                  label: const Text(
+                    'Tes Bunyi',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF3563E9)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () async {
+                    await NotificationService.instance
+                        .scheduleTestAlarmInSeconds(5);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            '⏱️ Alarm dijadwalkan! Kunci/tutup HP Anda, alarm akan berbunyi dalam 5 detik.',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: Color(0xFF3563E9),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.timer_rounded,
+                    color: Color(0xFF3563E9),
+                    size: 18,
+                  ),
+                  label: const Text(
+                    'Tes 5 Detik',
+                    style: TextStyle(
+                      color: Color(0xFF3563E9),
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -301,7 +886,9 @@ class _PengaturanPageState extends State<PengaturanPage> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
 
     showModalBottomSheet(
       context: context,
@@ -330,7 +917,9 @@ class _PengaturanPageState extends State<PengaturanPage> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                        color: isDark
+                            ? const Color(0xFF475569)
+                            : const Color(0xFFCBD5E1),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -346,52 +935,71 @@ class _PengaturanPageState extends State<PengaturanPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Nama Lengkap
                   _buildModalFieldLabel('Nama Lengkap', titleColor),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: nameController,
                     style: TextStyle(color: titleColor, fontSize: 14),
-                    validator: (val) => val == null || val.isEmpty ? 'Nama tidak boleh kosong' : null,
-                    decoration: _modalInputDecoration('Contoh: Budi Santoso', Icons.person_outline, borderColor),
+                    validator: (val) => val == null || val.isEmpty
+                        ? 'Nama tidak boleh kosong'
+                        : null,
+                    decoration: _modalInputDecoration(
+                      'Contoh: Budi Santoso',
+                      Icons.person_outline,
+                      borderColor,
+                    ),
                   ),
                   const SizedBox(height: 14),
 
-                  // Email
                   _buildModalFieldLabel('Email Mahasiswa', titleColor),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: emailController,
                     style: TextStyle(color: titleColor, fontSize: 14),
                     keyboardType: TextInputType.emailAddress,
-                    validator: (val) => val == null || val.isEmpty ? 'Email tidak boleh kosong' : null,
-                    decoration: _modalInputDecoration('nama@mahasiswa.ac.id', Icons.email_outlined, borderColor),
+                    validator: (val) => val == null || val.isEmpty
+                        ? 'Email tidak boleh kosong'
+                        : null,
+                    decoration: _modalInputDecoration(
+                      'nama@mahasiswa.ac.id',
+                      Icons.email_outlined,
+                      borderColor,
+                    ),
                   ),
                   const SizedBox(height: 14),
 
-                  // NIM
                   _buildModalFieldLabel('NIM', titleColor),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: nimController,
                     style: TextStyle(color: titleColor, fontSize: 14),
-                    validator: (val) => val == null || val.isEmpty ? 'NIM tidak boleh kosong' : null,
-                    decoration: _modalInputDecoration('Contoh: 220101001', Icons.badge_outlined, borderColor),
+                    validator: (val) => val == null || val.isEmpty
+                        ? 'NIM tidak boleh kosong'
+                        : null,
+                    decoration: _modalInputDecoration(
+                      'Contoh: 220101001',
+                      Icons.badge_outlined,
+                      borderColor,
+                    ),
                   ),
                   const SizedBox(height: 14),
 
-                  // Program Studi
                   _buildModalFieldLabel('Program Studi', titleColor),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: prodiController,
                     style: TextStyle(color: titleColor, fontSize: 14),
-                    validator: (val) => val == null || val.isEmpty ? 'Program Studi tidak boleh kosong' : null,
-                    decoration: _modalInputDecoration('Contoh: Teknik Informatika', Icons.school_outlined, borderColor),
+                    validator: (val) => val == null || val.isEmpty
+                        ? 'Program Studi tidak boleh kosong'
+                        : null,
+                    decoration: _modalInputDecoration(
+                      'Contoh: Teknik Informatika',
+                      Icons.school_outlined,
+                      borderColor,
+                    ),
                   ),
                   const SizedBox(height: 24),
 
-                  // Save Button
                   SizedBox(
                     width: double.infinity,
                     height: 48,
@@ -447,15 +1055,15 @@ class _PengaturanPageState extends State<PengaturanPage> {
   Widget _buildModalFieldLabel(String label, Color color) {
     return Text(
       label,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.bold,
-        color: color,
-      ),
+      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color),
     );
   }
 
-  InputDecoration _modalInputDecoration(String hint, IconData icon, Color borderColor) {
+  InputDecoration _modalInputDecoration(
+    String hint,
+    IconData icon,
+    Color borderColor,
+  ) {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
@@ -493,7 +1101,9 @@ class _PengaturanPageState extends State<PengaturanPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withValues(alpha: 0.2) : const Color.fromRGBO(0, 0, 0, 0.02),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : const Color.fromRGBO(0, 0, 0, 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -504,9 +1114,7 @@ class _PengaturanPageState extends State<PengaturanPage> {
           Container(
             width: 72,
             height: 72,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: Image.asset(
@@ -591,9 +1199,15 @@ class _PengaturanPageState extends State<PengaturanPage> {
             ),
             child: Row(
               children: [
-                Expanded(child: _buildSegmentOption(AppThemeMode.terang, 'Terang')),
-                Expanded(child: _buildSegmentOption(AppThemeMode.gelap, 'Gelap')),
-                Expanded(child: _buildSegmentOption(AppThemeMode.sistem, 'Sistem')),
+                Expanded(
+                  child: _buildSegmentOption(AppThemeMode.terang, 'Terang'),
+                ),
+                Expanded(
+                  child: _buildSegmentOption(AppThemeMode.gelap, 'Gelap'),
+                ),
+                Expanded(
+                  child: _buildSegmentOption(AppThemeMode.sistem, 'Sistem'),
+                ),
               ],
             ),
           ),
@@ -627,10 +1241,12 @@ class _PengaturanPageState extends State<PengaturanPage> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color.fromRGBO(0, 0, 0, 0.04),
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.3)
+                        : const Color.fromRGBO(0, 0, 0, 0.04),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ]
               : [],
         ),
@@ -652,7 +1268,9 @@ class _PengaturanPageState extends State<PengaturanPage> {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 color: isSelected
                     ? const Color(0xFF3563E9)
-                    : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                    : (isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B)),
               ),
             ),
           ],
@@ -730,19 +1348,12 @@ class _PengaturanPageState extends State<PengaturanPage> {
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF451A1A) : const Color(0xFFFEF2F2),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFFFECDD3),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFFFECDD3), width: 1),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.logout_rounded,
-              color: Color(0xFFDC2626),
-              size: 20,
-            ),
+            Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 20),
             SizedBox(width: 10),
             Text(
               'Keluar dari Akun',

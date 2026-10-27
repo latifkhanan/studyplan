@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/jadwal.dart';
 import '../services/database_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/jadwal_card.dart';
 import '../widgets/delete_confirmation_dialog.dart';
 import 'form_jadwal_page.dart';
@@ -18,8 +19,12 @@ class _JadwalPageState extends State<JadwalPage> {
 
   List<Jadwal> _daySchedules = [];
   List<String> _datesWithClasses = [];
+  List<Jadwal> _allSchedules = [];
   bool _isLoading = true;
 
+  final List<String> _dayNames = [
+    'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
+  ];
   final List<String> _weekdays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
   final List<String> _months = [
     '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -39,10 +44,12 @@ class _JadwalPageState extends State<JadwalPage> {
     final formattedDate = _formatDateKey(_selectedDate);
     final dayData = await DatabaseService.instance.getJadwalByTanggal(formattedDate);
     final datesWithData = await DatabaseService.instance.getDatesWithJadwal();
+    final allSchedules = await DatabaseService.instance.getAllJadwal();
 
     setState(() {
       _daySchedules = dayData;
       _datesWithClasses = datesWithData;
+      _allSchedules = allSchedules;
       _isLoading = false;
     });
   }
@@ -55,8 +62,7 @@ class _JadwalPageState extends State<JadwalPage> {
   }
 
   String _formatDateHeader(DateTime dt) {
-    final dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-    final dayName = dayNames[dt.weekday - 1];
+    final dayName = _dayNames[dt.weekday - 1];
     final monthName = _months[dt.month];
     return '$dayName, ${dt.day} $monthName ${dt.year}';
   }
@@ -82,6 +88,7 @@ class _JadwalPageState extends State<JadwalPage> {
 
     if (confirm == true && item.id != null) {
       await DatabaseService.instance.deleteJadwal(item.id!, docId: item.docId);
+      await NotificationService.instance.cancelJadwalAlarm(item.id!);
       _loadData();
     }
   }
@@ -232,18 +239,41 @@ class _JadwalPageState extends State<JadwalPage> {
 
         final cellDate = DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
         final dateKey = _formatDateKey(cellDate);
+        final dayName = _dayNames[cellDate.weekday - 1];
 
         final isSelected = _selectedDate.year == cellDate.year &&
             _selectedDate.month == cellDate.month &&
             _selectedDate.day == cellDate.day;
 
-        // Has dots if in datesWithClasses or defaults for demo
         final hasClass = _datesWithClasses.contains(dateKey) ||
-            ([6, 7, 8, 13, 14, 15, 20, 21, 22, 27, 28, 29].contains(dayNumber) && _currentMonth.month == 10 && _currentMonth.year == 2026);
+            _allSchedules.any((j) => j.tanggal == dateKey || j.hari.toLowerCase() == dayName.toLowerCase());
 
-        final dayTextColor = isSelected
-            ? Colors.white
-            : (isDark ? Colors.white : const Color(0xFF1E293B));
+        BoxDecoration circleDecoration;
+        Color dayTextColor;
+
+        if (isSelected) {
+          circleDecoration = const BoxDecoration(
+            color: Color(0xFF3563E9),
+            shape: BoxShape.circle,
+          );
+          dayTextColor = Colors.white;
+        } else if (hasClass) {
+          circleDecoration = BoxDecoration(
+            color: isDark ? const Color(0xFF1E3A8A) : const Color(0xFFEFF4FF),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFF3563E9).withValues(alpha: 0.5),
+              width: 1,
+            ),
+          );
+          dayTextColor = const Color(0xFF3563E9);
+        } else {
+          circleDecoration = const BoxDecoration(
+            color: Colors.transparent,
+            shape: BoxShape.circle,
+          );
+          dayTextColor = isDark ? Colors.white : const Color(0xFF1E293B);
+        }
 
         return GestureDetector(
           onTap: () {
@@ -259,15 +289,12 @@ class _JadwalPageState extends State<JadwalPage> {
                 width: 32,
                 height: 32,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF3563E9) : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
+                decoration: circleDecoration,
                 child: Text(
                   '$dayNumber',
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontWeight: (isSelected || hasClass) ? FontWeight.bold : FontWeight.w500,
                     color: dayTextColor,
                   ),
                 ),

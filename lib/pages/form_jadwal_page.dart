@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../models/jadwal.dart';
 import '../services/database_service.dart';
+import '../services/notification_service.dart';
 
 class FormJadwalPage extends StatefulWidget {
   final Jadwal? jadwal;
@@ -22,14 +24,33 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
   late TextEditingController _jamSelesaiController;
 
   late DateTime _currentDate;
+  bool _isAlarmActive = true;
+  final Set<int> _alarmMinutesList = {10};
 
   final List<String> _months = [
-    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    '',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
   ];
 
   final List<String> _dayNames = [
-    'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
   ];
 
   @override
@@ -42,6 +63,12 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
     _ruanganController = TextEditingController(text: item?.ruangan ?? '');
     _jamMulaiController = TextEditingController(text: item?.jamMulai ?? '');
     _jamSelesaiController = TextEditingController(text: item?.jamSelesai ?? '');
+
+    _isAlarmActive = item?.isAlarmActive ?? true;
+    _alarmMinutesList
+      ..clear()
+      ..addAll(item?.alarmMinutesList ?? [10]);
+    if (_alarmMinutesList.isEmpty) _alarmMinutesList.add(10);
 
     if (item != null && item.tanggal.isNotEmpty) {
       final parts = item.tanggal.split('-');
@@ -159,19 +186,45 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
 
       final newJadwal = Jadwal(
         id: widget.jadwal?.id,
+        docId: widget.jadwal?.docId,
         mataKuliah: _mataKuliahController.text.trim(),
         dosen: _dosenController.text.trim(),
         ruangan: _ruanganController.text.trim(),
-        jamMulai: _jamMulaiController.text.trim().isEmpty ? '08.00' : _jamMulaiController.text.trim(),
-        jamSelesai: _jamSelesaiController.text.trim().isEmpty ? '09.40' : _jamSelesaiController.text.trim(),
+        jamMulai: _jamMulaiController.text.trim().isEmpty
+            ? '08.00'
+            : _jamMulaiController.text.trim(),
+        jamSelesai: _jamSelesaiController.text.trim().isEmpty
+            ? '09.40'
+            : _jamSelesaiController.text.trim(),
         hari: dayName,
         tanggal: _formatDateKey(_currentDate),
+        isAlarmActive: _isAlarmActive,
+        alarmMinutesList: _alarmMinutesList.toList()
+          ..sort((a, b) => b.compareTo(a)),
       );
 
+      int insertedOrUpdatedId;
       if (widget.jadwal == null) {
-        await DatabaseService.instance.insertJadwal(newJadwal);
+        insertedOrUpdatedId = await DatabaseService.instance.insertJadwal(
+          newJadwal,
+        );
       } else {
-        await DatabaseService.instance.updateJadwal(newJadwal);
+        insertedOrUpdatedId = await DatabaseService.instance.updateJadwal(
+          newJadwal,
+        );
+      }
+
+      // Sync Notification Alarm
+      final finalJadwal = newJadwal.copyWith(
+        id: newJadwal.id ?? insertedOrUpdatedId,
+      );
+      if (_isAlarmActive) {
+        await NotificationService.instance.requestPermissions();
+        await NotificationService.instance.scheduleWeeklyJadwalAlarm(
+          finalJadwal,
+        );
+      } else if (finalJadwal.id != null) {
+        await NotificationService.instance.cancelJadwalAlarm(finalJadwal.id!);
       }
 
       if (mounted) {
@@ -186,8 +239,12 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final labelColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subtitleColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtitleColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -225,10 +282,7 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
               const SizedBox(height: 4),
               Text(
                 'Lengkapi jadwal kuliahmu di bawah ini. Semua kolom wajib diisi.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: subtitleColor,
-                ),
+                style: TextStyle(fontSize: 13, color: subtitleColor),
               ),
               const SizedBox(height: 24),
 
@@ -238,7 +292,9 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
               _buildTextField(
                 controller: _mataKuliahController,
                 hint: 'Contoh: Basis Data',
-                validator: (val) => val == null || val.isEmpty ? 'Mata kuliah tidak boleh kosong' : null,
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Mata kuliah tidak boleh kosong'
+                    : null,
               ),
               const SizedBox(height: 16),
 
@@ -248,7 +304,9 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
               _buildTextField(
                 controller: _dosenController,
                 hint: 'Masukkan nama dosen',
-                validator: (val) => val == null || val.isEmpty ? 'Nama dosen tidak boleh kosong' : null,
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Nama dosen tidak boleh kosong'
+                    : null,
               ),
               const SizedBox(height: 16),
 
@@ -258,7 +316,9 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
               _buildTextField(
                 controller: _ruanganController,
                 hint: 'Contoh: Ruang G.203',
-                validator: (val) => val == null || val.isEmpty ? 'Ruang kuliah tidak boleh kosong' : null,
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Ruang kuliah tidak boleh kosong'
+                    : null,
               ),
               const SizedBox(height: 16),
 
@@ -270,7 +330,10 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(14),
@@ -311,7 +374,10 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
                           onTap: () => _pickTime(_jamMulaiController),
                           borderRadius: BorderRadius.circular(14),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 16,
+                            ),
                             decoration: BoxDecoration(
                               color: Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(14),
@@ -321,7 +387,9 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  _jamMulaiController.text.isEmpty ? 'Pilih waktu' : _jamMulaiController.text,
+                                  _jamMulaiController.text.isEmpty
+                                      ? 'Pilih waktu'
+                                      : _jamMulaiController.text,
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: _jamMulaiController.text.isEmpty
@@ -352,7 +420,10 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
                           onTap: () => _pickTime(_jamSelesaiController),
                           borderRadius: BorderRadius.circular(14),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 16,
+                            ),
                             decoration: BoxDecoration(
                               color: Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(14),
@@ -362,7 +433,9 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  _jamSelesaiController.text.isEmpty ? 'Pilih waktu' : _jamSelesaiController.text,
+                                  _jamSelesaiController.text.isEmpty
+                                      ? 'Pilih waktu'
+                                      : _jamSelesaiController.text,
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: _jamSelesaiController.text.isEmpty
@@ -384,6 +457,11 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
+
+              // 6. Pengaturan Alarm Mingguan
+              _buildAlarmSettingsCard(isDark, labelColor, borderColor),
+
               const SizedBox(height: 36),
 
               // Primary Action: Simpan Jadwal
@@ -440,6 +518,145 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
     );
   }
 
+  Widget _buildAlarmSettingsCard(
+    bool isDark,
+    Color labelColor,
+    Color borderColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3563E9).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.alarm_rounded,
+                  color: Color(0xFF3563E9),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Alarm Pengingat Mingguan',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: labelColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Notifikasi berulang tiap jam perkuliahan',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _isAlarmActive,
+                activeThumbColor: const Color(0xFF3563E9),
+                onChanged: (val) {
+                  setState(() {
+                    _isAlarmActive = val;
+                  });
+                },
+              ),
+            ],
+          ),
+          if (_isAlarmActive) ...[
+            const SizedBox(height: 14),
+            Divider(color: borderColor, height: 1),
+            const SizedBox(height: 14),
+            Text(
+              'Bunyikan Alarm Sebelum Kelas:',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: labelColor,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [5, 10, 15, 30].map((mins) {
+                final isSelected = _alarmMinutesList.contains(mins);
+                return ChoiceChip(
+                  label: Text('$mins Menit'),
+                  selected: isSelected,
+                  selectedColor: const Color(0xFF3563E9),
+                  showCheckmark: false,
+                  labelStyle: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                  ),
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(
+                      color: isSelected ? const Color(0xFF3563E9) : borderColor,
+                    ),
+                  ),
+                  onSelected: (selected) {
+                    if (!selected && _alarmMinutesList.length == 1) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Pilih minimal satu waktu pengingat.'),
+                        ),
+                      );
+                      return;
+                    }
+                    setState(() {
+                      if (selected) {
+                        _alarmMinutesList.add(mins);
+                      } else {
+                        _alarmMinutesList.remove(mins);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Pilih satu atau beberapa waktu pengingat.',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildLabel(String text, Color textColor) {
     return Text(
       text,
@@ -458,7 +675,9 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
 
     return TextFormField(
       controller: controller,
@@ -469,7 +688,10 @@ class _FormJadwalPageState extends State<FormJadwalPage> {
         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
         filled: true,
         fillColor: Theme.of(context).cardColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: borderColor),
