@@ -81,7 +81,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // TODO: Reuse this dialog if the login page restores inline password reset.
   // ignore: unused_element
   void _showForgotPasswordDialog() {
     final emailController = TextEditingController(text: _emailController.text);
