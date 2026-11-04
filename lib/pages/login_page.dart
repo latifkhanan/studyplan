@@ -81,6 +81,8 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  // TODO: Reuse this dialog if the login page restores inline password reset.
+  // ignore: unused_element
   void _showForgotPasswordDialog() {
     final emailController = TextEditingController(text: _emailController.text);
     final formKey = GlobalKey<FormState>();
@@ -162,10 +164,12 @@ class _LoginPageState extends State<LoginPage> {
                         style: TextStyle(color: titleColor, fontSize: 14),
                         keyboardType: TextInputType.emailAddress,
                         validator: (val) {
-                          if (val == null || val.isEmpty)
+                          if (val == null || val.isEmpty) {
                             return 'Masukkan email Anda';
-                          if (!val.contains('@'))
+                          }
+                          if (!val.contains('@')) {
                             return 'Format email tidak valid';
+                          }
                           return null;
                         },
                         decoration: InputDecoration(
@@ -250,8 +254,9 @@ class _LoginPageState extends State<LoginPage> {
                                             );
                                       }
                                     } finally {
-                                      if (context.mounted)
+                                      if (context.mounted) {
                                         setDialogState(() => isSending = false);
+                                      }
                                     }
                                   }
                                 },

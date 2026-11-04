@@ -224,8 +224,9 @@ class _CatatanPageState extends State<CatatanPage> {
                               )
                               .toList(),
                           onChanged: (val) {
-                            if (val != null)
+                            if (val != null) {
                               setModalState(() => selectedMataKuliah = val);
+                            }
                           },
                         )
                       else
@@ -264,8 +265,9 @@ class _CatatanPageState extends State<CatatanPage> {
                             )
                             .toList(),
                         onChanged: (val) {
-                          if (val != null)
+                          if (val != null) {
                             setModalState(() => selectedMingguKe = val);
+                          }
                         },
                       ),
                       const SizedBox(height: 14),
