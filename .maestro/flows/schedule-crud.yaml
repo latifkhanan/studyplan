@@ -1,0 +1,55 @@
+appId: com.example.studyplan
+---
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/login.yaml
+- tapOn: "Jadwal"
+- assertVisible: "Jadwal Kuliah"
+- scrollUntilVisible:
+    element: "Jadwal Hari Ini"
+    direction: DOWN
+- tapOn: "Tambah jadwal"
+- assertVisible: "Tambah Jadwal"
+- tapOn: "Contoh: Basis Data"
+- inputText: "Maestro Jadwal ${TEST_RUN_ID}"
+- tapOn: "Masukkan nama dosen"
+- inputText: "Dosen Uji Maestro"
+- tapOn: "Contoh: Ruang G.203"
+- inputText: "Ruang Uji"
+- scrollUntilVisible:
+    element: "Simpan Jadwal"
+    direction: DOWN
+- tapOn: "Simpan Jadwal"
+- tapOn:
+    text: "Allow"
+    optional: true
+- scrollUntilVisible:
+    element: "Maestro Jadwal ${TEST_RUN_ID}"
+    direction: DOWN
+- assertVisible: "Maestro Jadwal ${TEST_RUN_ID}"
+- tapOn: "Beranda"
+- scrollUntilVisible:
+    element: "Maestro Jadwal ${TEST_RUN_ID}"
+    direction: DOWN
+- assertVisible: "Maestro Jadwal ${TEST_RUN_ID}"
+- tapOn: "Jadwal"
+- scrollUntilVisible:
+    element: "Maestro Jadwal ${TEST_RUN_ID}"
+    direction: DOWN
+- assertVisible: "Maestro Jadwal ${TEST_RUN_ID}"
+- tapOn: "Edit jadwal Maestro Jadwal ${TEST_RUN_ID}"
+- tapOn: "Maestro Jadwal ${TEST_RUN_ID}"
+- eraseText
+- inputText: "Maestro Jadwal ${TEST_RUN_ID} Diperbarui"
+- scrollUntilVisible:
+    element: "Simpan Jadwal"
+    direction: DOWN
+- tapOn: "Simpan Jadwal"
+- scrollUntilVisible:
+    element: "Maestro Jadwal ${TEST_RUN_ID} Diperbarui"
+    direction: DOWN
+- assertVisible: "Maestro Jadwal ${TEST_RUN_ID} Diperbarui"
+- tapOn: "Hapus jadwal Maestro Jadwal ${TEST_RUN_ID} Diperbarui"
+- assertVisible: "Hapus jadwal?"
+- tapOn: "Hapus Jadwal"
+- assertNotVisible: "Maestro Jadwal ${TEST_RUN_ID} Diperbarui"

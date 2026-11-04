@@ -8,7 +8,9 @@ import '../widgets/delete_confirmation_dialog.dart';
 import 'form_jadwal_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final bool isActive;
+
+  const HomePage({super.key, this.isActive = false});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -33,17 +35,26 @@ class _HomePageState extends State<HomePage> {
     _loadJadwal();
   }
 
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      _loadJadwal();
+    }
+  }
+
   Future<void> _loadJadwal() async {
     setState(() => _isLoading = true);
     final now = DateTime.now();
     final todayName = _dayNames[now.weekday - 1];
     final formattedDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-    var data = await DatabaseService.instance.getJadwalByTanggal(formattedDate);
-    if (data.isEmpty) {
-      data = await DatabaseService.instance.getJadwalByHari(todayName);
-    }
+    final data = await DatabaseService.instance.getJadwalForDate(
+      tanggal: formattedDate,
+      hari: todayName,
+    );
 
+    if (!mounted) return;
     setState(() {
       _schedules = data;
       _isLoading = false;

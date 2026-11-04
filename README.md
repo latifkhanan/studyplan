@@ -130,3 +130,53 @@ StudyPlan menggunakan **Layered Architecture** dengan pendekatan **Offline-First
     ├── Diagram_Activity.png
     └── Layered_Service_Architecture_Diagram.png
 ```
+
+---
+
+## 🧪 BDD Automation / Integration Testing dengan Maestro
+
+Flow Maestro berada di `.maestro/flows/`, dengan alur login reusable di `.maestro/subflows/login.yaml`. Skenario dijalankan pada aplikasi Android melalui UI:
+
+| Skenario | Given | When | Then |
+|----------|-------|------|------|
+| Validasi field login | Pengguna berada di halaman login | Menekan **Masuk** tanpa mengisi field | Pesan wajib isi email/NIM dan kata sandi tampil |
+| Validasi email reset kata sandi | Pengguna membuka halaman **Lupa kata sandi?** | Mengisi email dengan format tidak valid dan mengirim form | Pesan format email tidak valid tampil; request Firebase tidak dikirim |
+| CRUD jadwal | Pengguna login dengan akun uji | Membuat, mengedit, lalu menghapus jadwal | Perubahan tampil dan data uji terhapus |
+| Catatan | Pengguna login dengan akun uji | Membuat lalu menghapus catatan | Catatan tampil dan kemudian terhapus |
+| Verifikasi sesi login | Pengguna sudah login | Menjalankan `verify-authenticated-session.yaml` tanpa menghapus state | Sapaan akun uji tampil di Beranda; flow ini memverifikasi sesi yang ada, bukan kredensial |
+
+### Menjalankan test
+
+1. Siapkan Android Emulator atau perangkat Android, aktifkan USB debugging jika menggunakan perangkat, dan pastikan aplikasi dapat dibangun dengan Flutter.
+2. Pasang Maestro CLI mengikuti [petunjuk instalasi resmi](https://docs.maestro.dev/maestro-cli/how-to-install-maestro-cli.md). Pastikan Java 17+ tersedia.
+3. Build dan install APK debug:
+
+   ```powershell
+   flutter build apk --debug
+   adb install -r build\app\outputs\flutter-apk\app-debug.apk
+   ```
+
+4. Siapkan akun Firebase khusus testing. Ganti nilai contoh di bawah dengan email/password akun yang benar-benar sudah terdaftar; teks `email-akun-uji` dan `password-akun-uji` bukan kredensial yang bisa dipakai. Jangan simpan kredensial di file flow atau commit ke repository:
+
+   ```powershell
+   $env:TEST_EMAIL = "email-akun-uji"
+   $env:TEST_PASSWORD = "password-akun-uji"
+   $env:TEST_RUN_ID = "run-unik-001"
+   ```
+
+5. Jalankan flow validasi publik tanpa akun:
+
+   ```powershell
+   maestro test .maestro\flows\login-required-fields.yaml
+   maestro test .maestro\flows\password-reset-invalid-email.yaml
+   ```
+
+6. Jalankan flow terautentikasi:
+
+   ```powershell
+   maestro test -e TEST_EMAIL=$env:TEST_EMAIL -e TEST_PASSWORD=$env:TEST_PASSWORD -e TEST_RUN_ID=$env:TEST_RUN_ID .maestro\flows\schedule-crud.yaml
+   maestro test -e TEST_EMAIL=$env:TEST_EMAIL -e TEST_PASSWORD=$env:TEST_PASSWORD -e TEST_RUN_ID=$env:TEST_RUN_ID .maestro\flows\notes-create-delete.yaml
+   maestro test .maestro\flows\verify-authenticated-session.yaml
+   ```
+
+Gunakan `TEST_RUN_ID` yang berbeda setiap kali menjalankan flow. Setiap flow menghapus state aplikasi saat mulai; flow CRUD menghapus data yang berhasil dibuat di akhir skenario. Flow jadwal juga memeriksa jadwal yang baru dibuat pada Beranda dan tab Jadwal. Kedua tab memuat ulang data ketika dibuka dan memakai aturan pencarian tanggal/hari yang sama. Artefak Maestro dapat memuat log interaksi; periksa dan samarkan informasi akun sebelum membagikan folder report.

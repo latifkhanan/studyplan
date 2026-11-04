@@ -1,0 +1,19 @@
+appId: com.example.studyplan
+---
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/login.yaml
+- tapOn: "Catatan"
+- assertVisible: "Catatan & Tugas"
+- tapOn: "Tambah catatan atau tugas"
+- assertVisible: "Tambah Catatan / Tugas"
+- tapOn: "Contoh: Catatan Bab 3 / Tugas ERD"
+- inputText: "Maestro Catatan ${TEST_RUN_ID}"
+- tapOn: "Tuliskan ringkasan materi atau instruksi tugas..."
+- inputText: "Isi catatan untuk pengujian UI Maestro."
+- tapOn: "Simpan"
+- assertVisible: "Maestro Catatan ${TEST_RUN_ID}"
+- tapOn: "Hapus catatan Maestro Catatan ${TEST_RUN_ID}"
+- assertVisible: "Hapus Catatan?"
+- tapOn: "Hapus"
+- assertNotVisible: "Maestro Catatan ${TEST_RUN_ID}"

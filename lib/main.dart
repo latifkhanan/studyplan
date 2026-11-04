@@ -269,8 +269,8 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      const HomePage(),
-      const JadwalPage(),
+      HomePage(isActive: _currentIndex == 0),
+      JadwalPage(isActive: _currentIndex == 1),
       CatatanPage(isActive: _currentIndex == 2),
       PengaturanPage(
         currentTheme: widget.currentTheme,

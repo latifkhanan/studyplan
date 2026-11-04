@@ -1,0 +1,12 @@
+appId: com.example.studyplan
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Masuk ke StudyPlan"
+    timeout: 10000
+- tapOn:
+    text: "Masuk"
+    waitToSettleTimeoutMs: 0
+- assertVisible: "Masukkan email atau NIM Anda"
+- assertVisible: "Masukkan kata sandi Anda"

@@ -1,0 +1,15 @@
+appId: com.example.studyplan
+---
+- extendedWaitUntil:
+    visible: "Masuk ke StudyPlan"
+    timeout: 10000
+- tapOn: "nama@mahasiswa.ac.id"
+- inputText: ${TEST_EMAIL}
+- pressKey: back
+- tapOn: "Masukkan kata sandi"
+- inputText: ${TEST_PASSWORD}
+- pressKey: back
+- tapOn: "Masuk"
+- extendedWaitUntil:
+    visible: "Beranda"
+    timeout: 20000

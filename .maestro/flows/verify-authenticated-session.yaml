@@ -1,0 +1,5 @@
+appId: com.example.studyplan
+---
+- extendedWaitUntil:
+    visible: "Halo, Varok Beta!"
+    timeout: 30000

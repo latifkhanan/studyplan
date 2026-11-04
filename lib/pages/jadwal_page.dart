@@ -7,7 +7,9 @@ import '../widgets/delete_confirmation_dialog.dart';
 import 'form_jadwal_page.dart';
 
 class JadwalPage extends StatefulWidget {
-  const JadwalPage({super.key});
+  final bool isActive;
+
+  const JadwalPage({super.key, this.isActive = false});
 
   @override
   State<JadwalPage> createState() => _JadwalPageState();
@@ -39,13 +41,25 @@ class _JadwalPageState extends State<JadwalPage> {
     _loadData();
   }
 
+  @override
+  void didUpdateWidget(covariant JadwalPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      _loadData();
+    }
+  }
+
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final formattedDate = _formatDateKey(_selectedDate);
-    final dayData = await DatabaseService.instance.getJadwalByTanggal(formattedDate);
+    final dayData = await DatabaseService.instance.getJadwalForDate(
+      tanggal: formattedDate,
+      hari: _dayNames[_selectedDate.weekday - 1],
+    );
     final datesWithData = await DatabaseService.instance.getDatesWithJadwal();
     final allSchedules = await DatabaseService.instance.getAllJadwal();
 
+    if (!mounted) return;
     setState(() {
       _daySchedules = dayData;
       _datesWithClasses = datesWithData;
@@ -343,19 +357,23 @@ class _JadwalPageState extends State<JadwalPage> {
             ),
           ],
         ),
-        Material(
-          color: const Color(0xFF3563E9),
-          borderRadius: BorderRadius.circular(12),
-          child: InkWell(
+        Semantics(
+          button: true,
+          label: 'Tambah jadwal',
+          child: Material(
+            color: const Color(0xFF3563E9),
             borderRadius: BorderRadius.circular(12),
-            onTap: () => _openForm(),
-            child: const SizedBox(
-              width: 42,
-              height: 42,
-              child: Icon(
-                Icons.add_rounded,
-                color: Colors.white,
-                size: 24,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _openForm(),
+              child: const SizedBox(
+                width: 42,
+                height: 42,
+                child: Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
             ),
           ),

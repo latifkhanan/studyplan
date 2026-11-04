@@ -512,19 +512,23 @@ class _CatatanPageState extends State<CatatanPage> {
                   letterSpacing: -0.5,
                 ),
               ),
-              Material(
-                color: const Color(0xFF3563E9),
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
+              Semantics(
+                button: true,
+                label: 'Tambah catatan atau tugas',
+                child: Material(
+                  color: const Color(0xFF3563E9),
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () => _showAddNoteDialog(),
-                  child: const SizedBox(
-                    width: 42,
-                    height: 42,
-                    child: Icon(
-                      Icons.add_rounded,
-                      color: Colors.white,
-                      size: 24,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _showAddNoteDialog(),
+                    child: const SizedBox(
+                      width: 42,
+                      height: 42,
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ),
@@ -845,21 +849,29 @@ class _CatatanPageState extends State<CatatanPage> {
               ),
               Row(
                 children: [
-                  InkWell(
-                    onTap: () => _showAddNoteDialog(editNote: note),
-                    child: const Icon(
-                      Icons.edit_outlined,
-                      color: Color(0xFF3563E9),
-                      size: 18,
+                  Semantics(
+                    button: true,
+                    label: 'Edit catatan ${note.judul}',
+                    child: InkWell(
+                      onTap: () => _showAddNoteDialog(editNote: note),
+                      child: const Icon(
+                        Icons.edit_outlined,
+                        color: Color(0xFF3563E9),
+                        size: 18,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  InkWell(
-                    onTap: () => _deleteNote(note),
-                    child: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: Color(0xFFEF4444),
-                      size: 18,
+                  Semantics(
+                    button: true,
+                    label: 'Hapus catatan ${note.judul}',
+                    child: InkWell(
+                      onTap: () => _deleteNote(note),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: Color(0xFFEF4444),
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],

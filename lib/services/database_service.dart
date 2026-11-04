@@ -234,6 +234,15 @@ class DatabaseService {
     return result.map((json) => Jadwal.fromMap(json)).toList();
   }
 
+  Future<List<Jadwal>> getJadwalForDate({
+    required String tanggal,
+    required String hari,
+  }) async {
+    final schedulesForDate = await getJadwalByTanggal(tanggal);
+    if (schedulesForDate.isNotEmpty) return schedulesForDate;
+    return getJadwalByHari(hari);
+  }
+
   // 3. Ambil Jadwal berdasarkan Hari
   Future<List<Jadwal>> getJadwalByHari(String hari) async {
     final uid = _currentUserId;

@@ -233,29 +233,37 @@ class JadwalCard extends StatelessWidget {
                   ),
                   if (onEdit != null) const SizedBox(width: 6),
                   if (onEdit != null)
-                    InkWell(
-                      onTap: onEdit,
-                      borderRadius: BorderRadius.circular(8),
-                      child: const Padding(
-                        padding: EdgeInsets.all(4.0),
-                        child: Icon(
-                          Icons.edit_outlined,
-                          color: Color(0xFF3563E9),
-                          size: 18,
+                    Semantics(
+                      button: true,
+                      label: 'Edit jadwal ${jadwal.mataKuliah}',
+                      child: InkWell(
+                        onTap: onEdit,
+                        borderRadius: BorderRadius.circular(8),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4.0),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            color: Color(0xFF3563E9),
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
                   if (onDelete != null) const SizedBox(width: 4),
                   if (onDelete != null)
-                    InkWell(
-                      onTap: onDelete,
-                      borderRadius: BorderRadius.circular(8),
-                      child: const Padding(
-                        padding: EdgeInsets.all(4.0),
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          color: Color(0xFFEF4444),
-                          size: 18,
+                    Semantics(
+                      button: true,
+                      label: 'Hapus jadwal ${jadwal.mataKuliah}',
+                      child: InkWell(
+                        onTap: onDelete,
+                        borderRadius: BorderRadius.circular(8),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4.0),
+                          child: Icon(
+                            Icons.delete_outline_rounded,
+                            color: Color(0xFFEF4444),
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
