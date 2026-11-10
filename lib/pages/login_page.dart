@@ -6,8 +6,9 @@ import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onLoginSuccess;
+  final AuthService? authService;
 
-  const LoginPage({super.key, required this.onLoginSuccess});
+  const LoginPage({super.key, required this.onLoginSuccess, this.authService});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -20,6 +21,8 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
   bool _isLoading = false;
 
+  AuthService get _authService => widget.authService ?? AuthService();
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -31,7 +34,7 @@ class _LoginPageState extends State<LoginPage> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await AuthService().login(
+        await _authService.login(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
@@ -60,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
   void _handleGoogleLogin() async {
     setState(() => _isLoading = true);
     try {
-      final credential = await AuthService().signInWithGoogle();
+      final credential = await _authService.signInWithGoogle();
       if (credential != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -79,236 +82,6 @@ class _LoginPageState extends State<LoginPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  // ignore: unused_element
-  void _showForgotPasswordDialog() {
-    final emailController = TextEditingController(text: _emailController.text);
-    final formKey = GlobalKey<FormState>();
-    bool isSending = false;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtitleColor = isDark
-        ? const Color(0xFF94A3B8)
-        : const Color(0xFF64748B);
-    final borderColor = isDark
-        ? const Color(0xFF334155)
-        : const Color(0xFFE2E8F0);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              backgroundColor: Theme.of(context).cardColor,
-              surfaceTintColor: Theme.of(context).cardColor,
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 24,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF1E3A8A)
-                                : const Color(0xFFEFF4FF),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.lock_reset_rounded,
-                            color: Color(0xFF3563E9),
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Center(
-                        child: Text(
-                          'Lupa Kata Sandi?',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: titleColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Masukkan email akun StudyPlan Anda. Kami akan mengirimkan link untuk mengatur ulang kata sandi Anda.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: subtitleColor,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextFormField(
-                        controller: emailController,
-                        style: TextStyle(color: titleColor, fontSize: 14),
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (val) {
-                          if (val == null || val.isEmpty) {
-                            return 'Masukkan email Anda';
-                          }
-                          if (!val.contains('@')) {
-                            return 'Format email tidak valid';
-                          }
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'nama@mahasiswa.ac.id',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF94A3B8),
-                            fontSize: 14,
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.email_outlined,
-                            color: Color(0xFF94A3B8),
-                            size: 20,
-                          ),
-                          filled: true,
-                          fillColor: isDark
-                              ? const Color(0xFF0F172A)
-                              : const Color(0xFFF8FAFC),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: borderColor),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: borderColor),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF3563E9),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3563E9),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          onPressed: isSending
-                              ? null
-                              : () async {
-                                  if (formKey.currentState!.validate()) {
-                                    setDialogState(() => isSending = true);
-                                    try {
-                                      await AuthService()
-                                          .sendPasswordResetEmail(
-                                            emailController.text.trim(),
-                                          );
-                                      if (context.mounted) {
-                                        Navigator.pop(context);
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Link reset kata sandi telah dikirim ke email Anda! Periksa kotak masuk/spam.',
-                                            ),
-                                            backgroundColor: Color(0xFF3563E9),
-                                          ),
-                                        );
-                                      }
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                              SnackBar(
-                                                content: Text(e.toString()),
-                                                backgroundColor: Colors.red,
-                                              ),
-                                            );
-                                      }
-                                    } finally {
-                                      if (context.mounted) {
-                                        setDialogState(() => isSending = false);
-                                      }
-                                    }
-                                  }
-                                },
-                          child: isSending
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  'Kirim Link Reset',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: borderColor),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(
-                            'Batal',
-                            style: TextStyle(
-                              color: titleColor,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   @override
