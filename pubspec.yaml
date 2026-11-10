@@ -53,6 +53,8 @@ dev_dependencies:
 
   firebase_auth_platform_interface: ^7.7.3
   firebase_core_platform_interface: ^6.0.3
+  cloud_firestore_platform_interface: ^6.6.12
+  google_sign_in_platform_interface: ^2.5.0
   sqflite_common_ffi: ^2.3.4
 
   # The "flutter_lints" package below contains a set of recommended lints to
