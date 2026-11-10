@@ -183,15 +183,18 @@ class JadwalCard extends StatelessWidget {
                                 color: Color(0xFF3563E9),
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                jadwal.alarmMinutesList
-                                    .map((minutes) => '${minutes}m')
-                                    .join(', '),
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF3563E9),
+                              Flexible(
+                                child: Text(
+                                  jadwal.alarmMinutesList
+                                      .map((minutes) => '${minutes}m')
+                                      .join(', '),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF3563E9),
+                                  ),
                                 ),
                               ),
                             ],
