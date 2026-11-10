@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/jadwal.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
@@ -18,15 +19,33 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Jadwal> _schedules = [];
+  List<Jadwal> _allSchedules = [];
   bool _isLoading = true;
 
   final List<String> _dayNames = [
-    'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
   ];
 
   final List<String> _months = [
-    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    '',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
   ];
 
   @override
@@ -47,16 +66,24 @@ class _HomePageState extends State<HomePage> {
     setState(() => _isLoading = true);
     final now = DateTime.now();
     final todayName = _dayNames[now.weekday - 1];
-    final formattedDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final formattedDate =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     final data = await DatabaseService.instance.getJadwalForDate(
       tanggal: formattedDate,
       hari: todayName,
     );
+    final allData = await DatabaseService.instance.getAllJadwal();
+    allData.sort((a, b) {
+      final dateCompare = a.tanggal.compareTo(b.tanggal);
+      if (dateCompare != 0) return dateCompare;
+      return a.jamMulai.compareTo(b.jamMulai);
+    });
 
     if (!mounted) return;
     setState(() {
       _schedules = data;
+      _allSchedules = allData;
       _isLoading = false;
     });
   }
@@ -64,9 +91,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _openFormPage({Jadwal? item}) async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => FormJadwalPage(jadwal: item),
-      ),
+      MaterialPageRoute(builder: (context) => FormJadwalPage(jadwal: item)),
     );
 
     if (result == true) {
@@ -108,6 +133,8 @@ class _HomePageState extends State<HomePage> {
                   ),
                 )
               : _buildScheduleList(),
+          const SizedBox(height: 24),
+          _buildAllScheduleSection(),
           const SizedBox(height: 16),
         ],
       ),
@@ -122,9 +149,7 @@ class _HomePageState extends State<HomePage> {
         Container(
           width: 42,
           height: 42,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.asset(
@@ -164,7 +189,9 @@ class _HomePageState extends State<HomePage> {
 
     final user = AuthService().currentUser;
     final displayName = user?.displayName;
-    final name = (displayName != null && displayName.isNotEmpty) ? displayName : 'Mahasiswa';
+    final name = (displayName != null && displayName.isNotEmpty)
+        ? displayName
+        : 'Mahasiswa';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +270,9 @@ class _HomePageState extends State<HomePage> {
                   '$timeRange · Semangat belajar!',
                   style: TextStyle(
                     fontSize: 13,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -277,11 +306,7 @@ class _HomePageState extends State<HomePage> {
             child: const SizedBox(
               width: 38,
               height: 38,
-              child: Icon(
-                Icons.add_rounded,
-                color: Colors.white,
-                size: 22,
-              ),
+              child: Icon(Icons.add_rounded, color: Colors.white, size: 22),
             ),
           ),
         ),
@@ -298,12 +323,18 @@ class _HomePageState extends State<HomePage> {
         alignment: Alignment.center,
         child: Column(
           children: [
-            const Icon(Icons.event_busy_rounded, size: 48, color: Color(0xFF94A3B8)),
+            const Icon(
+              Icons.event_busy_rounded,
+              size: 48,
+              color: Color(0xFF94A3B8),
+            ),
             const SizedBox(height: 12),
             Text(
               'Belum ada jadwal untuk hari ini.',
               style: TextStyle(
-                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
                 fontSize: 14,
               ),
             ),
@@ -325,6 +356,72 @@ class _HomePageState extends State<HomePage> {
           onDelete: () => _deleteJadwal(item),
         );
       },
+    );
+  }
+
+  Widget _buildAllScheduleSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Seluruh Jadwal',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${_allSchedules.length} jadwal terdaftar',
+          style: TextStyle(
+            fontSize: 13,
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (_allSchedules.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Text(
+              'Belum ada jadwal yang didaftarkan.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+                fontSize: 14,
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _allSchedules.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 14),
+            itemBuilder: (context, index) {
+              final item = _allSchedules[index];
+              return JadwalCard(
+                jadwal: item,
+                onEdit: () => _openFormPage(item: item),
+                onDelete: () => _deleteJadwal(item),
+              );
+            },
+          ),
+      ],
     );
   }
 }
