@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "537951855992-sles840bv2bkf0bhne55le4hunoadegk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.studyplan",
+            "certificate_hash": "ddd9315f27bc2de0c429ca85cdf48b8045f43501"
+          }
+        },
+        {
           "client_id": "537951855992-ptktjg4lf4qr1l0dvq7lghqmt369hrps.apps.googleusercontent.com",
           "client_type": 3
         }

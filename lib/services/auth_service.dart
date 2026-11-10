@@ -12,7 +12,27 @@ class AuthService {
   // Pengguna aktif saat ini
   User? get currentUser => _auth.currentUser;
 
-  // 1. Registrasi Pengguna Baru & Simpan Detail Profil ke Firestore (Cepat & Non-blocking)
+  Future<void> _ensureNimAvailable(String nim, {String? excludingUid}) async {
+    final normalizedNim = nim.trim();
+    if (normalizedNim.isEmpty) return;
+
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('nim', isEqualTo: normalizedNim)
+          .limit(1)
+          .get();
+
+      final duplicate = snapshot.docs.any((doc) => doc.id != excludingUid);
+      if (duplicate) {
+        throw 'NIM sudah terdaftar. Silakan gunakan NIM lain.';
+      }
+    } on FirebaseException catch (_) {
+      throw 'NIM tidak dapat diverifikasi. Periksa koneksi internet Anda.';
+    }
+  }
+
+  // 1. Registrasi Pengguna Baru & Simpan Detail Profil ke Firestore
   Future<UserCredential?> register({
     required String email,
     required String password,
@@ -21,34 +41,45 @@ class AuthService {
     required String prodi,
   }) async {
     try {
-      // 1. Buat akun di FirebaseAuth dengan batas waktu 15 detik
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => throw 'Koneksi lambat. Periksa jaringan internet Anda.',
-      );
+      final normalizedEmail = email.trim().toLowerCase();
+      final normalizedNim = nim.trim();
+
+      // Pastikan NIM belum digunakan sebelum membuat akun Firebase Auth.
+      await _ensureNimAvailable(normalizedNim);
+
+      // Buat akun di FirebaseAuth dengan batas waktu 15 detik.
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
+            email: normalizedEmail,
+            password: password,
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () =>
+                throw 'Koneksi lambat. Periksa jaringan internet Anda.',
+          );
 
       final user = userCredential.user;
       if (user != null) {
-        // 2. Update Display Name di FirebaseAuth
-        user.updateDisplayName(nama).catchError((_) {});
+        // Update Display Name di FirebaseAuth.
+        await user.updateDisplayName(nama).catchError((_) {});
 
-        // 3. Simpan data tambahan ke Firestore secara non-blocking dengan timeout 5 detik
-        _firestore.collection('users').doc(user.uid).set({
-          'uid': user.uid,
-          'nama': nama,
-          'email': email,
-          'nim': nim,
-          'prodi': prodi,
-          'createdAt': FieldValue.serverTimestamp(),
-        }).timeout(
-          const Duration(seconds: 5),
-          onTimeout: () {
-            // Jika Firestore lambat/offline, registrasi akun tetap berhasil di FirebaseAuth
-          },
-        ).catchError((_) {});
+        // Simpan data tambahan ke Firestore.
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .set({
+              'uid': user.uid,
+              'nama': nama,
+              'email': normalizedEmail,
+              'nim': normalizedNim,
+              'prodi': prodi,
+              'createdAt': FieldValue.serverTimestamp(),
+            })
+            .timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => throw 'Koneksi ke database terlalu lambat.',
+            );
       }
 
       return userCredential;
@@ -73,18 +104,21 @@ class AuthService {
     required String password,
   }) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => throw 'Koneksi lambat. Periksa koneksi internet Anda.',
-      );
+      return await _auth
+          .signInWithEmailAndPassword(email: email, password: password)
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () =>
+                throw 'Koneksi lambat. Periksa koneksi internet Anda.',
+          );
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
+      if (e.code == 'user-not-found' ||
+          e.code == 'wrong-password' ||
+          e.code == 'invalid-credential') {
         throw 'Email atau kata sandi yang Anda masukkan salah.';
       }
-      throw e.message ?? 'Gagal masuk. Periksa kembali email dan kata sandi Anda.';
+      throw e.message ??
+          'Gagal masuk. Periksa kembali email dan kata sandi Anda.';
     } catch (e) {
       if (e is String) rethrow;
       throw 'Terjadi kesalahan saat mencoba masuk.';
@@ -113,12 +147,14 @@ class AuthService {
   }) async {
     final user = currentUser;
     if (user != null) {
+      final normalizedNim = nim.trim();
+      await _ensureNimAvailable(normalizedNim, excludingUid: user.uid);
       await user.updateDisplayName(nama).catchError((_) {});
       await _firestore.collection('users').doc(user.uid).set({
         'uid': user.uid,
         'nama': nama,
         'email': user.email ?? '',
-        'nim': nim,
+        'nim': normalizedNim,
         'prodi': prodi,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -136,10 +172,13 @@ class AuthService {
   // 6. Kirim Email Reset Kata Sandi
   Future<void> sendPasswordResetEmail(String email) async {
     try {
-      await _auth.sendPasswordResetEmail(email: email).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw 'Koneksi lambat. Periksa koneksi internet Anda.',
-      );
+      await _auth
+          .sendPasswordResetEmail(email: email)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () =>
+                throw 'Koneksi lambat. Periksa koneksi internet Anda.',
+          );
     } on FirebaseAuthException catch (e) {
       throw e.message ?? 'Gagal mengirim email reset kata sandi.';
     } catch (e) {
@@ -159,7 +198,8 @@ class AuthService {
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return null; // Pengguna membatalkan login
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -170,7 +210,8 @@ class AuthService {
 
       final user = userCredential.user;
       if (user != null) {
-        final displayName = (user.displayName != null && user.displayName!.isNotEmpty)
+        final displayName =
+            (user.displayName != null && user.displayName!.isNotEmpty)
             ? user.displayName!
             : (googleUser.displayName ?? 'Pengguna Google');
         final email = user.email ?? googleUser.email;
@@ -204,7 +245,9 @@ class AuthService {
       throw e.message ?? 'Gagal masuk dengan Google.';
     } catch (e) {
       final str = e.toString();
-      if (str.contains('12500') || str.contains('10') || str.contains('sign_in_failed')) {
+      if (str.contains('12500') ||
+          str.contains('10') ||
+          str.contains('sign_in_failed')) {
         throw 'Google Sign-In gagal. Pastikan SHA-1 Fingerprint telah didaftarkan di Firebase Console.';
       }
       if (e is String) rethrow;

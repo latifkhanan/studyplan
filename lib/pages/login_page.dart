@@ -396,9 +396,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 36),
 
-                  // 1. Email / NIM Input
+                  // 1. Email Input
                   Text(
-                    'Email atau NIM',
+                    'Email',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -410,7 +410,7 @@ class _LoginPageState extends State<LoginPage> {
                     controller: _emailController,
                     style: TextStyle(color: titleColor, fontSize: 14),
                     validator: (val) => val == null || val.isEmpty
-                        ? 'Masukkan email atau NIM Anda'
+                        ? 'Masukkan email Anda'
                         : null,
                     decoration: InputDecoration(
                       hintText: 'nama@mahasiswa.ac.id',

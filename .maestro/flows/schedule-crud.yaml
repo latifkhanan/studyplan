@@ -1,7 +1,5 @@
 appId: com.example.studyplan
 ---
-- launchApp:
-    clearState: true
 - runFlow: ../subflows/login.yaml
 - tapOn: "Jadwal"
 - assertVisible: "Jadwal Kuliah"

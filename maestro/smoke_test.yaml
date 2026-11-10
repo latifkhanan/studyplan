@@ -1,0 +1,8 @@
+appId: com.example.studyplan
+
+---
+- extendedWaitUntil:
+    visible: "Email"
+    timeout: 15000
+- assertVisible: "Kata Sandi"
+- assertVisible: "Masuk"

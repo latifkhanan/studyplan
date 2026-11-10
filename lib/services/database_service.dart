@@ -7,15 +7,27 @@ import '../models/jadwal.dart';
 import '../models/catatan.dart';
 
 class DatabaseService {
-  static final DatabaseService instance = DatabaseService._init();
-  static Database? _database;
+  static final DatabaseService instance = DatabaseService._init(
+    'studyplan_v6.db',
+  );
+  Database? _database;
+  final String _databaseName;
 
-  DatabaseService._init();
+  DatabaseService._init(this._databaseName);
+
+  factory DatabaseService.forTesting(String databaseName) {
+    return DatabaseService._init(databaseName);
+  }
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('studyplan_v6.db');
+    _database = await _initDB(_databaseName);
     return _database!;
+  }
+
+  Future<void> closeForTesting() async {
+    await _database?.close();
+    _database = null;
   }
 
   Future<Database> _initDB(String filePath) async {

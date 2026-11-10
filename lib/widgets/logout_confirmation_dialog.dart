@@ -10,13 +10,15 @@ Future<bool?> showLogoutConfirmationDialog(
     builder: (context) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
       final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-      final subtitleColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-      final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+      final subtitleColor = isDark
+          ? const Color(0xFF94A3B8)
+          : const Color(0xFF64748B);
+      final borderColor = isDark
+          ? const Color(0xFF334155)
+          : const Color(0xFFE2E8F0);
 
       return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         backgroundColor: Theme.of(context).cardColor,
         surfaceTintColor: Theme.of(context).cardColor,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -31,7 +33,9 @@ Future<bool?> showLogoutConfirmationDialog(
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF451A1A) : const Color(0xFFFEF2F2),
+                  color: isDark
+                      ? const Color(0xFF451A1A)
+                      : const Color(0xFFFEF2F2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -55,7 +59,7 @@ Future<bool?> showLogoutConfirmationDialog(
 
               // Subtitle Peringatan
               Text(
-                'Apakah Anda yakin ingin keluar? Anda perlu memasukkan email/NIM dan kata sandi kembali untuk masuk.',
+                'Apakah Anda yakin ingin keluar? Anda perlu memasukkan email dan kata sandi kembali untuk masuk.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
@@ -71,7 +75,9 @@ Future<bool?> showLogoutConfirmationDialog(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                    color: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: borderColor),
                   ),
