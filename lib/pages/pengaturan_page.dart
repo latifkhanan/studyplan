@@ -636,11 +636,11 @@ class _PengaturanPageState extends State<PengaturanPage> {
           InkWell(
             onTap: _showEditProfileModal,
             borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
+                children: [
                   Icon(Icons.edit_outlined, size: 18, color: Color(0xFF3563E9)),
                   SizedBox(width: 8),
                   Text(

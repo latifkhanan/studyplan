@@ -8,10 +8,23 @@ import '../widgets/jadwal_card.dart';
 import '../widgets/delete_confirmation_dialog.dart';
 import 'form_jadwal_page.dart';
 
+typedef JadwalDateLoader = Future<List<Jadwal>> Function({
+  required String tanggal,
+  required String hari,
+});
+typedef JadwalLoader = Future<List<Jadwal>> Function();
+
 class HomePage extends StatefulWidget {
   final bool isActive;
+  final JadwalDateLoader? loadTodaySchedules;
+  final JadwalLoader? loadAllSchedules;
 
-  const HomePage({super.key, this.isActive = false});
+  const HomePage({
+    super.key,
+    this.isActive = false,
+    this.loadTodaySchedules,
+    this.loadAllSchedules,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -69,11 +82,15 @@ class _HomePageState extends State<HomePage> {
     final formattedDate =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-    final data = await DatabaseService.instance.getJadwalForDate(
-      tanggal: formattedDate,
-      hari: todayName,
-    );
-    final allData = await DatabaseService.instance.getAllJadwal();
+    final data =
+        await (widget.loadTodaySchedules ??
+            DatabaseService.instance.getJadwalForDate)(
+          tanggal: formattedDate,
+          hari: todayName,
+        );
+    final allData =
+        await (widget.loadAllSchedules ??
+            DatabaseService.instance.getAllJadwal)();
     allData.sort((a, b) {
       final dateCompare = a.tanggal.compareTo(b.tanggal);
       if (dateCompare != 0) return dateCompare;
