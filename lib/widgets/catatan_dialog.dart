@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
+
 import '../models/jadwal.dart';
 import '../models/catatan.dart';
 import '../services/database_service.dart';
 
 class CatatanDialog extends StatefulWidget {
   final Jadwal jadwal;
+  final Future<List<Catatan>> Function(String mataKuliah)? loadNotes;
+  final Future<int> Function(Catatan note)? insertNote;
+  final Future<int> Function(Catatan note)? updateNote;
+  final Future<int> Function(int id, {String? docId})? deleteNote;
 
-  const CatatanDialog({super.key, required this.jadwal});
+  const CatatanDialog({
+    super.key,
+    required this.jadwal,
+    this.loadNotes,
+    this.insertNote,
+    this.updateNote,
+    this.deleteNote,
+  });
 
   static Future<void> show(BuildContext context, Jadwal jadwal) {
     return showModalBottomSheet(
@@ -50,7 +62,12 @@ class _CatatanDialogState extends State<CatatanDialog> {
 
   Future<void> _loadNotes() async {
     setState(() => _isLoading = true);
-    final notes = await DatabaseService.instance.getCatatanByMataKuliah(widget.jadwal.mataKuliah);
+    final notes =
+        await (widget.loadNotes?.call(widget.jadwal.mataKuliah) ??
+            DatabaseService.instance.getCatatanByMataKuliah(
+              widget.jadwal.mataKuliah,
+            ));
+    if (!mounted) return;
     setState(() {
       _existingNotes = notes;
       _isLoading = false;
@@ -82,8 +99,10 @@ class _CatatanDialogState extends State<CatatanDialog> {
   Future<void> _saveNote() async {
     if (_formKey.currentState!.validate()) {
       final now = DateTime.now();
-      final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      final timeStr = '${now.hour.toString().padLeft(2, '0')}.${now.minute.toString().padLeft(2, '0')}';
+      final dateStr =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final timeStr =
+          '${now.hour.toString().padLeft(2, '0')}.${now.minute.toString().padLeft(2, '0')}';
 
       if (_editingCatatan == null) {
         final newNote = Catatan(
@@ -97,7 +116,8 @@ class _CatatanDialogState extends State<CatatanDialog> {
           tipe: _selectedTipe,
           createdAt: now.toIso8601String(),
         );
-        await DatabaseService.instance.insertCatatan(newNote);
+        await (widget.insertNote?.call(newNote) ??
+            DatabaseService.instance.insertCatatan(newNote));
       } else {
         final updated = _editingCatatan!.copyWith(
           mingguKe: _selectedMingguKe,
@@ -105,7 +125,8 @@ class _CatatanDialogState extends State<CatatanDialog> {
           isi: _isiController.text.trim(),
           tipe: _selectedTipe,
         );
-        await DatabaseService.instance.updateCatatan(updated);
+        await (widget.updateNote?.call(updated) ??
+            DatabaseService.instance.updateCatatan(updated));
       }
 
       setState(() {
@@ -118,7 +139,8 @@ class _CatatanDialogState extends State<CatatanDialog> {
 
   Future<void> _deleteNote(Catatan note) async {
     if (note.id != null) {
-      await DatabaseService.instance.deleteCatatan(note.id!, docId: note.docId);
+      await (widget.deleteNote?.call(note.id!, docId: note.docId) ??
+          DatabaseService.instance.deleteCatatan(note.id!, docId: note.docId));
       _loadNotes();
     }
   }
@@ -128,8 +150,12 @@ class _CatatanDialogState extends State<CatatanDialog> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtitleColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtitleColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
 
     return Container(
       constraints: BoxConstraints(
@@ -213,7 +239,9 @@ class _CatatanDialogState extends State<CatatanDialog> {
           Flexible(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
-              child: _isCreatingNew ? _buildNoteForm(isDark) : _buildNotesList(isDark),
+              child: _isCreatingNew
+                  ? _buildNoteForm(isDark)
+                  : _buildNotesList(isDark),
             ),
           ),
         ],
@@ -223,7 +251,9 @@ class _CatatanDialogState extends State<CatatanDialog> {
 
   Widget _buildNotesList(bool isDark) {
     final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtitleColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final subtitleColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
 
     final Map<int, List<Catatan>> grouped = {};
     for (var note in _existingNotes) {
@@ -252,7 +282,10 @@ class _CatatanDialogState extends State<CatatanDialog> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 elevation: 0,
               ),
               onPressed: _startCreating,
@@ -284,14 +317,15 @@ class _CatatanDialogState extends State<CatatanDialog> {
             ),
             child: Column(
               children: [
-                const Icon(Icons.note_add_outlined, size: 48, color: Color(0xFF94A3B8)),
+                const Icon(
+                  Icons.note_add_outlined,
+                  size: 48,
+                  color: Color(0xFF94A3B8),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'Belum ada catatan atau tugas.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: subtitleColor,
-                  ),
+                  style: TextStyle(fontSize: 14, color: subtitleColor),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -321,7 +355,11 @@ class _CatatanDialogState extends State<CatatanDialog> {
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
                       children: [
-                        const Icon(Icons.folder_special_rounded, color: Color(0xFF3563E9), size: 18),
+                        const Icon(
+                          Icons.folder_special_rounded,
+                          color: Color(0xFF3563E9),
+                          size: 18,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'Minggu Ke-$weekNum',
@@ -333,9 +371,13 @@ class _CatatanDialogState extends State<CatatanDialog> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF3563E9).withValues(alpha: 0.1),
+                            color: const Color(0xFF3563E9)
+                                .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
@@ -350,10 +392,12 @@ class _CatatanDialogState extends State<CatatanDialog> {
                       ],
                     ),
                   ),
-                  ...weekNotes.map((note) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10.0),
-                        child: _buildNoteCard(note, isDark),
-                      )),
+                  ...weekNotes.map(
+                    (note) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10.0),
+                      child: _buildNoteCard(note, isDark),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                 ],
               );
@@ -365,8 +409,12 @@ class _CatatanDialogState extends State<CatatanDialog> {
 
   Widget _buildNoteCard(Catatan note, bool isDark) {
     final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtitleColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtitleColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
 
     final isTugas = note.tipe == 'tugas';
     final tagBg = isTugas ? const Color(0xFFFEF2F2) : const Color(0xFFEFF6FF);
@@ -387,7 +435,10 @@ class _CatatanDialogState extends State<CatatanDialog> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: tagBg,
                   borderRadius: BorderRadius.circular(8),
@@ -410,12 +461,20 @@ class _CatatanDialogState extends State<CatatanDialog> {
                   const SizedBox(width: 8),
                   InkWell(
                     onTap: () => _startEditing(note),
-                    child: const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF3563E9)),
+                    child: const Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: Color(0xFF3563E9),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   InkWell(
                     onTap: () => _deleteNote(note),
-                    child: const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      size: 16,
+                      color: Color(0xFFEF4444),
+                    ),
                   ),
                 ],
               ),
@@ -447,7 +506,9 @@ class _CatatanDialogState extends State<CatatanDialog> {
   Widget _buildNoteForm(bool isDark) {
     final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final labelColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
 
     return Form(
       key: _formKey,
@@ -479,7 +540,14 @@ class _CatatanDialogState extends State<CatatanDialog> {
           const SizedBox(height: 12),
 
           // Pertemuan / Minggu Ke Dropdown
-          Text('Minggu / Pertemuan Ke-', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: labelColor)),
+          Text(
+            'Minggu / Pertemuan Ke-',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: labelColor,
+            ),
+          ),
           const SizedBox(height: 6),
           DropdownButtonFormField<int>(
             initialValue: _selectedMingguKe,
@@ -487,10 +555,12 @@ class _CatatanDialogState extends State<CatatanDialog> {
             style: TextStyle(color: titleColor, fontSize: 14),
             decoration: _inputDecoration('', borderColor),
             items: List.generate(16, (i) => i + 1)
-                .map((m) => DropdownMenuItem(
-                      value: m,
-                      child: Text('Minggu Ke-$m / Pertemuan $m'),
-                    ))
+                .map(
+                  (m) => DropdownMenuItem(
+                    value: m,
+                    child: Text('Minggu Ke-$m / Pertemuan $m'),
+                  ),
+                )
                 .toList(),
             onChanged: (val) {
               if (val != null) {
@@ -503,41 +573,78 @@ class _CatatanDialogState extends State<CatatanDialog> {
           const SizedBox(height: 16),
 
           // Kategori: Catatan / Tugas
-          Text('Kategori', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: labelColor)),
+          Text(
+            'Kategori',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: labelColor,
+            ),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
-                child: _buildTipeOption('catatan', 'Catatan', Icons.description_outlined),
+                child: _buildTipeOption(
+                  'catatan',
+                  'Catatan',
+                  Icons.description_outlined,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildTipeOption('tugas', 'Tugas', Icons.assignment_outlined),
+                child: _buildTipeOption(
+                  'tugas',
+                  'Tugas',
+                  Icons.assignment_outlined,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
 
           // Judul
-          Text('Judul', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: labelColor)),
+          Text(
+            'Judul',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: labelColor,
+            ),
+          ),
           const SizedBox(height: 6),
           TextFormField(
             controller: _judulController,
             style: TextStyle(color: titleColor, fontSize: 14),
-            validator: (val) => val == null || val.isEmpty ? 'Judul tidak boleh kosong' : null,
-            decoration: _inputDecoration('Contoh: Catatan Dosen Bab 3 / Tugas ERD', borderColor),
+            validator: (val) =>
+                val == null || val.isEmpty ? 'Judul tidak boleh kosong' : null,
+            decoration: _inputDecoration(
+              'Contoh: Catatan Dosen Bab 3 / Tugas ERD',
+              borderColor,
+            ),
           ),
           const SizedBox(height: 16),
 
           // Isi
-          Text('Isi Detail', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: labelColor)),
+          Text(
+            'Isi Detail',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: labelColor,
+            ),
+          ),
           const SizedBox(height: 6),
           TextFormField(
             controller: _isiController,
             maxLines: 5,
             style: TextStyle(color: titleColor, fontSize: 14),
-            validator: (val) => val == null || val.isEmpty ? 'Isi tidak boleh kosong' : null,
-            decoration: _inputDecoration('Tuliskan ringkasan materi atau detail tugas...', borderColor),
+            validator: (val) =>
+                val == null || val.isEmpty ? 'Isi tidak boleh kosong' : null,
+            decoration: _inputDecoration(
+              'Tuliskan ringkasan materi atau detail tugas...',
+              borderColor,
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -548,13 +655,19 @@ class _CatatanDialogState extends State<CatatanDialog> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3563E9),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 elevation: 0,
               ),
               onPressed: _saveNote,
               child: const Text(
                 'Simpan',
-                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -575,10 +688,14 @@ class _CatatanDialogState extends State<CatatanDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF3563E9) : Theme.of(context).scaffoldBackgroundColor,
+          color: isSelected
+              ? const Color(0xFF3563E9)
+              : Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF3563E9) : const Color(0xFFCBD5E1),
+            color: isSelected
+                ? const Color(0xFF3563E9)
+                : const Color(0xFFCBD5E1),
           ),
         ),
         child: Row(
@@ -611,8 +728,14 @@ class _CatatanDialogState extends State<CatatanDialog> {
       filled: true,
       fillColor: Theme.of(context).scaffoldBackgroundColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: borderColor),
+      ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Color(0xFF3563E9), width: 1.5),

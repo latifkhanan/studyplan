@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/jadwal.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
@@ -8,8 +9,21 @@ import 'form_jadwal_page.dart';
 
 class JadwalPage extends StatefulWidget {
   final bool isActive;
+  final Future<List<Jadwal>> Function({
+    required String tanggal,
+    required String hari,
+  })?
+  loadSchedulesForDate;
+  final Future<List<String>> Function()? loadDatesWithSchedules;
+  final Future<List<Jadwal>> Function()? loadAllSchedules;
 
-  const JadwalPage({super.key, this.isActive = false});
+  const JadwalPage({
+    super.key,
+    this.isActive = false,
+    this.loadSchedulesForDate,
+    this.loadDatesWithSchedules,
+    this.loadAllSchedules,
+  });
 
   @override
   State<JadwalPage> createState() => _JadwalPageState();
@@ -25,12 +39,37 @@ class _JadwalPageState extends State<JadwalPage> {
   bool _isLoading = true;
 
   final List<String> _dayNames = [
-    'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
   ];
-  final List<String> _weekdays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+  final List<String> _weekdays = [
+    'Sen',
+    'Sel',
+    'Rab',
+    'Kam',
+    'Jum',
+    'Sab',
+    'Min',
+  ];
   final List<String> _months = [
-    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    '',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
   ];
 
   @override
@@ -52,12 +91,21 @@ class _JadwalPageState extends State<JadwalPage> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final formattedDate = _formatDateKey(_selectedDate);
-    final dayData = await DatabaseService.instance.getJadwalForDate(
-      tanggal: formattedDate,
-      hari: _dayNames[_selectedDate.weekday - 1],
-    );
-    final datesWithData = await DatabaseService.instance.getDatesWithJadwal();
-    final allSchedules = await DatabaseService.instance.getAllJadwal();
+    final dayData =
+        await (widget.loadSchedulesForDate?.call(
+              tanggal: formattedDate,
+              hari: _dayNames[_selectedDate.weekday - 1],
+            ) ??
+            DatabaseService.instance.getJadwalForDate(
+              tanggal: formattedDate,
+              hari: _dayNames[_selectedDate.weekday - 1],
+            ));
+    final datesWithData =
+        await (widget.loadDatesWithSchedules?.call() ??
+            DatabaseService.instance.getDatesWithJadwal());
+    final allSchedules =
+        await (widget.loadAllSchedules?.call() ??
+            DatabaseService.instance.getAllJadwal());
 
     if (!mounted) return;
     setState(() {
@@ -85,10 +133,8 @@ class _JadwalPageState extends State<JadwalPage> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FormJadwalPage(
-          jadwal: item,
-          selectedDate: _selectedDate,
-        ),
+        builder: (context) =>
+            FormJadwalPage(jadwal: item, selectedDate: _selectedDate),
       ),
     );
 
@@ -159,7 +205,9 @@ class _JadwalPageState extends State<JadwalPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withValues(alpha: 0.2) : const Color.fromRGBO(0, 0, 0, 0.02),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : const Color.fromRGBO(0, 0, 0, 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -172,10 +220,19 @@ class _JadwalPageState extends State<JadwalPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: Icon(Icons.chevron_left_rounded, color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B)),
+                icon: Icon(
+                  Icons.chevron_left_rounded,
+                  color: isDark
+                      ? const Color(0xFFCBD5E1)
+                      : const Color(0xFF64748B),
+                ),
                 onPressed: () {
                   setState(() {
-                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
+                    _currentMonth = DateTime(
+                      _currentMonth.year,
+                      _currentMonth.month - 1,
+                      1,
+                    );
                   });
                 },
               ),
@@ -188,10 +245,19 @@ class _JadwalPageState extends State<JadwalPage> {
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.chevron_right_rounded, color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B)),
+                icon: Icon(
+                  Icons.chevron_right_rounded,
+                  color: isDark
+                      ? const Color(0xFFCBD5E1)
+                      : const Color(0xFF64748B),
+                ),
                 onPressed: () {
                   setState(() {
-                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+                    _currentMonth = DateTime(
+                      _currentMonth.year,
+                      _currentMonth.month + 1,
+                      1,
+                    );
                   });
                 },
               ),
@@ -211,7 +277,9 @@ class _JadwalPageState extends State<JadwalPage> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                       ),
                     ),
                   ),
@@ -227,8 +295,15 @@ class _JadwalPageState extends State<JadwalPage> {
 
   Widget _buildCalendarGrid() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final daysInMonth = DateUtils.getDaysInMonth(_currentMonth.year, _currentMonth.month);
-    final firstDayWeekday = DateTime(_currentMonth.year, _currentMonth.month, 1).weekday; // 1 = Mon, 7 = Sun
+    final daysInMonth = DateUtils.getDaysInMonth(
+      _currentMonth.year,
+      _currentMonth.month,
+    );
+    final firstDayWeekday = DateTime(
+      _currentMonth.year,
+      _currentMonth.month,
+      1,
+    ).weekday; // 1 = Mon, 7 = Sun
     final offset = firstDayWeekday - 1; // Number of empty cells before 1st day
 
     final totalCells = offset + daysInMonth;
@@ -251,16 +326,26 @@ class _JadwalPageState extends State<JadwalPage> {
           return const SizedBox.shrink();
         }
 
-        final cellDate = DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
+        final cellDate = DateTime(
+          _currentMonth.year,
+          _currentMonth.month,
+          dayNumber,
+        );
         final dateKey = _formatDateKey(cellDate);
         final dayName = _dayNames[cellDate.weekday - 1];
 
-        final isSelected = _selectedDate.year == cellDate.year &&
+        final isSelected =
+            _selectedDate.year == cellDate.year &&
             _selectedDate.month == cellDate.month &&
             _selectedDate.day == cellDate.day;
 
-        final hasClass = _datesWithClasses.contains(dateKey) ||
-            _allSchedules.any((j) => j.tanggal == dateKey || j.hari.toLowerCase() == dayName.toLowerCase());
+        final hasClass =
+            _datesWithClasses.contains(dateKey) ||
+            _allSchedules.any(
+              (j) =>
+                  j.tanggal == dateKey ||
+                  j.hari.toLowerCase() == dayName.toLowerCase(),
+            );
 
         BoxDecoration circleDecoration;
         Color dayTextColor;
@@ -308,7 +393,9 @@ class _JadwalPageState extends State<JadwalPage> {
                   '$dayNumber',
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: (isSelected || hasClass) ? FontWeight.bold : FontWeight.w500,
+                    fontWeight: (isSelected || hasClass)
+                        ? FontWeight.bold
+                        : FontWeight.w500,
                     color: dayTextColor,
                   ),
                 ),
@@ -318,7 +405,9 @@ class _JadwalPageState extends State<JadwalPage> {
                 width: 4,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: hasClass && !isSelected ? const Color(0xFF3563E9) : Colors.transparent,
+                  color: hasClass && !isSelected
+                      ? const Color(0xFF3563E9)
+                      : Colors.transparent,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -352,7 +441,9 @@ class _JadwalPageState extends State<JadwalPage> {
               '${_formatDateHeader(_selectedDate)} · ${_daySchedules.length} kelas',
               style: TextStyle(
                 fontSize: 13,
-                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
             ),
           ],
@@ -369,11 +460,7 @@ class _JadwalPageState extends State<JadwalPage> {
               child: const SizedBox(
                 width: 42,
                 height: 42,
-                child: Icon(
-                  Icons.add_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
+                child: Icon(Icons.add_rounded, color: Colors.white, size: 24),
               ),
             ),
           ),
@@ -392,12 +479,18 @@ class _JadwalPageState extends State<JadwalPage> {
         alignment: Alignment.center,
         child: Column(
           children: [
-            const Icon(Icons.event_busy_rounded, size: 48, color: Color(0xFF94A3B8)),
+            const Icon(
+              Icons.event_busy_rounded,
+              size: 48,
+              color: Color(0xFF94A3B8),
+            ),
             const SizedBox(height: 12),
             Text(
               'Tidak ada kelas pada tanggal ini.',
               style: TextStyle(
-                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
                 fontSize: 14,
               ),
             ),

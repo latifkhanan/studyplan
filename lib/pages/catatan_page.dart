@@ -6,8 +6,15 @@ import '../services/database_service.dart';
 
 class CatatanPage extends StatefulWidget {
   final bool isActive;
+  final Future<List<Catatan>> Function()? loadNotes;
+  final Future<List<Jadwal>> Function()? loadSchedules;
 
-  const CatatanPage({super.key, this.isActive = false});
+  const CatatanPage({
+    super.key,
+    this.isActive = false,
+    this.loadNotes,
+    this.loadSchedules,
+  });
 
   @override
   State<CatatanPage> createState() => _CatatanPageState();
@@ -45,8 +52,12 @@ class _CatatanPageState extends State<CatatanPage> {
 
   Future<void> _loadData() async {
     if (mounted) setState(() => _isLoading = true);
-    final notes = await DatabaseService.instance.getAllCatatan();
-    final schedules = await DatabaseService.instance.getAllJadwal();
+    final notes =
+        await (widget.loadNotes?.call() ??
+            DatabaseService.instance.getAllCatatan());
+    final schedules =
+        await (widget.loadSchedules?.call() ??
+            DatabaseService.instance.getAllJadwal());
 
     if (!mounted) return;
     setState(() {
@@ -698,102 +709,106 @@ class _CatatanPageState extends State<CatatanPage> {
                           ),
                         ],
                       ),
-                      child: Theme(
-                        data: Theme.of(context)
-                            .copyWith(dividerColor: Colors.transparent),
-                        child: ExpansionTile(
-                          initiallyExpanded: true,
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF3563E9)
-                                  .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.menu_book_rounded,
-                              color: Color(0xFF3563E9),
-                              size: 22,
-                            ),
-                          ),
-                          title: Text(
-                            courseName,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: titleColor,
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${weekMap.values.fold(0, (sum, list) => sum + list.length)} Item • ${sortedWeeks.length} Pertemuan',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: subtitleColor,
-                            ),
-                          ),
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: sortedWeeks.map((weekNum) {
-                                  final weekNotes = weekMap[weekNum]!;
-                                  return Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.symmetric(
-                                          vertical: 8,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF3563E9)
-                                              .withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(
-                                              Icons.calendar_view_week_rounded,
-                                              size: 14,
-                                              color: Color(0xFF3563E9),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'Minggu Ke-$weekNum / Pertemuan $weekNum',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF3563E9),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      ...weekNotes.map(
-                                        (note) => Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 10.0,
-                                          ),
-                                          child: _buildNoteItemCard(
-                                            note,
-                                            isDark,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                }).toList(),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Theme(
+                          data: Theme.of(context)
+                              .copyWith(dividerColor: Colors.transparent),
+                          child: ExpansionTile(
+                            initiallyExpanded: true,
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF3563E9)
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.menu_book_rounded,
+                                color: Color(0xFF3563E9),
+                                size: 22,
                               ),
                             ),
-                          ],
+                            title: Text(
+                              courseName,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: titleColor,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${weekMap.values.fold(0, (sum, list) => sum + list.length)} Item • ${sortedWeeks.length} Pertemuan',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: subtitleColor,
+                              ),
+                            ),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: sortedWeeks.map((weekNum) {
+                                    final weekNotes = weekMap[weekNum]!;
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          margin: const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF3563E9)
+                                                .withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons
+                                                    .calendar_view_week_rounded,
+                                                size: 14,
+                                                color: Color(0xFF3563E9),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'Minggu Ke-$weekNum / Pertemuan $weekNum',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF3563E9),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        ...weekNotes.map(
+                                          (note) => Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 10.0,
+                                            ),
+                                            child: _buildNoteItemCard(
+                                              note,
+                                              isDark,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );

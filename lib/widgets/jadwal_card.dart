@@ -117,94 +117,92 @@ class JadwalCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Row 1: Status badge & Actions (Catatan, Edit, Delete)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.start,
+            spacing: 8,
+            runSpacing: 6,
             children: [
-              Expanded(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? (status['color'] as Color).withValues(alpha: 0.2)
-                            : status['bg'],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (status['label'] == 'Berlangsung')
-                            Container(
-                              width: 6,
-                              height: 6,
-                              margin: const EdgeInsets.only(right: 6),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF10B981),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          Text(
-                            status['label'],
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: status['color'],
-                            ),
-                          ),
-                        ],
-                      ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
                     ),
-                    if (jadwal.isAlarmActive)
-                      Tooltip(
-                        message:
-                            'Alarm ${jadwal.alarmMinutesList.map((minutes) => '${minutes}m').join(', ')} sebelum kelas',
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? (status['color'] as Color).withValues(alpha: 0.2)
+                          : status['bg'],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (status['label'] == 'Berlangsung')
+                          Container(
+                            width: 6,
+                            height: 6,
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF3563E9)
-                                .withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.alarm_on_rounded,
-                                size: 13,
-                                color: Color(0xFF3563E9),
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  jadwal.alarmMinutesList
-                                      .map((minutes) => '${minutes}m')
-                                      .join(', '),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF3563E9),
-                                  ),
-                                ),
-                              ),
-                            ],
+                        Text(
+                          status['label'],
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: status['color'],
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                  if (jadwal.isAlarmActive)
+                    Tooltip(
+                      message:
+                          'Alarm ${jadwal.alarmMinutesList.map((minutes) => '${minutes}m').join(', ')} sebelum kelas',
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3563E9).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.alarm_on_rounded,
+                              size: 13,
+                              color: Color(0xFF3563E9),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                jadwal.alarmMinutesList
+                                    .map((minutes) => '${minutes}m')
+                                    .join(', '),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF3563E9),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
-              const SizedBox(width: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

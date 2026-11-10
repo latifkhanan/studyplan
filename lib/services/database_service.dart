@@ -168,7 +168,7 @@ class DatabaseService {
           ).copyWith(userId: uid);
         }).toList();
 
-        final db = await instance.database;
+        final db = await database;
         for (var item in firestoreList) {
           final existing = await db.query(
             'jadwal',
@@ -188,7 +188,7 @@ class DatabaseService {
       } catch (_) {}
     }
 
-    final db = await instance.database;
+    final db = await database;
     final result = await db.query(
       'jadwal',
       where: 'userId = ?',
@@ -216,7 +216,7 @@ class DatabaseService {
           ).copyWith(userId: uid);
         }).toList();
 
-        final db = await instance.database;
+        final db = await database;
         for (var item in firestoreList) {
           final existing = await db.query(
             'jadwal',
@@ -236,7 +236,7 @@ class DatabaseService {
       } catch (_) {}
     }
 
-    final db = await instance.database;
+    final db = await database;
     final result = await db.query(
       'jadwal',
       where: 'userId = ? AND tanggal = ?',
@@ -271,7 +271,7 @@ class DatabaseService {
           ).copyWith(userId: uid);
         }).toList();
 
-        final db = await instance.database;
+        final db = await database;
         for (var item in firestoreList) {
           final existing = await db.query(
             'jadwal',
@@ -291,7 +291,7 @@ class DatabaseService {
       } catch (_) {}
     }
 
-    final db = await instance.database;
+    final db = await database;
     final result = await db.query(
       'jadwal',
       where: 'userId = ? AND hari = ?',
@@ -304,7 +304,7 @@ class DatabaseService {
   // 4. Ambil Daftar Tanggal yang Ada Jadwalnya
   Future<List<String>> getDatesWithJadwal() async {
     final uid = _currentUserId;
-    final db = await instance.database;
+    final db = await database;
     final result = await db.rawQuery(
       'SELECT DISTINCT tanggal FROM jadwal WHERE userId = ?',
       [uid],
@@ -328,7 +328,7 @@ class DatabaseService {
       } catch (_) {}
     }
 
-    final db = await instance.database;
+    final db = await database;
     final finalJadwal = jadwalWithUser.copyWith(docId: createdDocId);
     return await db.insert('jadwal', finalJadwal.toMap());
   }
@@ -351,7 +351,7 @@ class DatabaseService {
       } catch (_) {}
     }
 
-    final db = await instance.database;
+    final db = await database;
     return await db.update(
       'jadwal',
       jadwalWithUser.toMap(),
@@ -371,7 +371,7 @@ class DatabaseService {
       } catch (_) {}
     }
 
-    final db = await instance.database;
+    final db = await database;
     return await db.delete(
       'jadwal',
       where: 'id = ? AND userId = ?',
@@ -396,7 +396,7 @@ class DatabaseService {
           ).copyWith(userId: uid);
         }).toList();
 
-        final db = await instance.database;
+        final db = await database;
         for (var item in firestoreList) {
           final existing = await db.query(
             'catatan',
@@ -416,7 +416,7 @@ class DatabaseService {
       } catch (_) {}
     }
 
-    final db = await instance.database;
+    final db = await database;
     final result = await db.query(
       'catatan',
       where: 'userId = ?',
@@ -429,7 +429,7 @@ class DatabaseService {
   // 2. Ambil Catatan Berdasarkan Mata Kuliah
   Future<List<Catatan>> getCatatanByMataKuliah(String mataKuliah) async {
     final uid = _currentUserId;
-    final db = await instance.database;
+    final db = await database;
     final result = await db.query(
       'catatan',
       where: 'userId = ? AND mataKuliah = ?',
@@ -455,7 +455,7 @@ class DatabaseService {
       } catch (_) {}
     }
 
-    final db = await instance.database;
+    final db = await database;
     final finalCatatan = catatanWithUser.copyWith(docId: createdDocId);
     return await db.insert('catatan', finalCatatan.toMap());
   }
@@ -478,7 +478,7 @@ class DatabaseService {
       } catch (_) {}
     }
 
-    final db = await instance.database;
+    final db = await database;
     return await db.update(
       'catatan',
       catatanWithUser.toMap(),
@@ -498,7 +498,7 @@ class DatabaseService {
       } catch (_) {}
     }
 
-    final db = await instance.database;
+    final db = await database;
     return await db.delete(
       'catatan',
       where: 'id = ? AND userId = ?',
@@ -507,7 +507,7 @@ class DatabaseService {
   }
 
   Future<void> close() async {
-    final db = await instance.database;
+    final db = await database;
     db.close();
   }
 }

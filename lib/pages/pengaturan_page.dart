@@ -280,53 +280,58 @@ class _PengaturanPageState extends State<PengaturanPage> {
                                     : Colors.transparent,
                               ),
                             ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              title: Text(
-                                opt['title']!,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
+                                title: Text(
+                                  opt['title']!,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
+                                    color: isSelected
+                                        ? const Color(0xFF3563E9)
+                                        : titleColor,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  opt['sub']!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
+                                  ),
+                                ),
+                                trailing: Icon(
+                                  isSelected
+                                      ? Icons.radio_button_checked_rounded
+                                      : Icons.radio_button_off_rounded,
                                   color: isSelected
                                       ? const Color(0xFF3563E9)
-                                      : titleColor,
+                                      : const Color(0xFF94A3B8),
                                 ),
+                                onTap: () async {
+                                  setModalState(() {
+                                    tempSelectedKey = opt['key']!;
+                                  });
+                                  await NotificationService.instance
+                                      .setSelectedRingtone(opt['key']!);
+                                  final schedules = await DatabaseService
+                                      .instance
+                                      .getAllJadwal();
+                                  await NotificationService.instance
+                                      .syncAllAlarms(schedules);
+                                  await NotificationService.instance
+                                      .showInstantTestNotification();
+                                },
                               ),
-                              subtitle: Text(
-                                opt['sub']!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF64748B),
-                                ),
-                              ),
-                              trailing: Icon(
-                                isSelected
-                                    ? Icons.radio_button_checked_rounded
-                                    : Icons.radio_button_off_rounded,
-                                color: isSelected
-                                    ? const Color(0xFF3563E9)
-                                    : const Color(0xFF94A3B8),
-                              ),
-                              onTap: () async {
-                                setModalState(() {
-                                  tempSelectedKey = opt['key']!;
-                                });
-                                await NotificationService.instance
-                                    .setSelectedRingtone(opt['key']!);
-                                final schedules = await DatabaseService.instance
-                                    .getAllJadwal();
-                                await NotificationService.instance
-                                    .syncAllAlarms(schedules);
-                                await NotificationService.instance
-                                    .showInstantTestNotification();
-                              },
                             ),
                           );
                         }).toList(),
